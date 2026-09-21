@@ -64,50 +64,87 @@ class VoxStudioApp {
     this.initDockSplitters();
     this.checkServerStatus();
 
-    // Tentar carregar Form1.vxf existente do projeto; se não existir, tenta autosave do localStorage ou inicia limpo
-    this.loadForm('forms/Form1.vxf').then(loaded => {
-      if (!loaded) {
-        let restored = false;
-        try {
-          const autoSaved = localStorage.getItem('vox_autosave_form');
-          if (autoSaved) {
-            const parsed = JSON.parse(autoSaved);
-            if (parsed && parsed.components && parsed.components.length > 0) {
-              this.designer.form = parsed;
-              this.designer.syncIdCounter();
-              this.designer.renderForm();
-              this.syncCodeFromDesigner();
-              this.updateStructureTree();
-              restored = true;
-            }
-          }
-        } catch (_) {}
-
-        if (!restored) {
-          this.designer.form = {
-            name: 'Form1',
-            title: 'Form1',
-            width: 700,
-            height: 480,
-            components: []
-          };
-          this.designer.syncIdCounter();
-          this.designer.selectedComponent = null;
-          this.designer.renderForm();
-          this.inspector.update(null);
-          this.updateStructureTree();
-          this.syncCodeFromDesigner();
-        }
-      }
-      if (this.openTabs && this.openTabs[0]) {
-        this.openTabs[0].formState = JSON.parse(JSON.stringify(this.designer.form));
-      }
-    });
+    // Sempre iniciar a IDE com um projeto e formulário em branco limpos (Padrão Delphi)
+    this.initBlankProject();
   }
 
   // --------------------------------------------------------------------------
   // Menu Bar Interativo (Delphi Standard)
   // --------------------------------------------------------------------------
+
+  // --------------------------------------------------------------------------
+  // Inicialização de Projeto em Branco Limpo (Padrão Delphi RAD)
+  // --------------------------------------------------------------------------
+  initBlankProject() {
+    try {
+      localStorage.removeItem('vox_autosave_form');
+    } catch (_) {}
+
+    const formWidth = 700;
+    const formHeight = 480;
+
+    this.designer.form = {
+      name: 'Form1',
+      title: 'Form1',
+      width: formWidth,
+      height: formHeight,
+      components: []
+    };
+
+    this.designer.syncIdCounter();
+    this.designer.selectedComponent = null;
+    this.designer.renderForm();
+    if (this.inspector) this.inspector.update(null);
+    this.updateStructureTree();
+    this.syncCodeFromDesigner();
+
+    // 1. Configurar estado do projeto ativo como Project1 limpo
+    this.currentProjectGroup = null;
+    this.currentProject = {
+      name: 'Project1',
+      file: 'Project1.voxProj',
+      folder: '.',
+      mainForm: 'Form1',
+      units: ['Form1.vox', 'Form1.vxf']
+    };
+    this.currentFile = {
+      name: 'Form1.vxf',
+      path: 'forms/Form1.vxf',
+      type: 'vxf'
+    };
+
+    // 2. Inicializar abas de documentos limpos
+    this.openTabs = [
+      this.createTabObject({
+        id: 'tab_Form1',
+        name: 'Form1.vxf',
+        title: 'Form1.vxf',
+        path: 'forms/Form1.vxf',
+        type: 'form',
+        isForm: true,
+        isDirty: false,
+        formState: JSON.parse(JSON.stringify(this.designer.form))
+      }),
+      this.createTabObject({
+        id: 'tab_Unit1',
+        name: 'Form1.vox',
+        title: 'Form1.vox',
+        path: 'forms/Form1.vox',
+        type: 'unit',
+        isForm: false,
+        isDirty: false,
+        content: window.VoxCodeGen ? window.VoxCodeGen.generateVoxCode(this.designer.form) : ''
+      })
+    ];
+    this.activeTabId = 'tab_Form1';
+    this.renderTabs();
+
+    // 3. Atualizar Project Explorer e título
+    this.updateProjectsTree();
+    const headerTitle = document.getElementById('projHeaderTitle') || document.querySelector('.projects-panel .panel-header span');
+    if (headerTitle) headerTitle.textContent = `${this.currentProject.name}.voxProj - Projects`;
+  }
+
   initMenuBarEvents() {
     const menuItems = document.querySelectorAll('.delphi-menubar .delphi-menu-item');
     if (!menuItems.length) return;
