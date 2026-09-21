@@ -1827,6 +1827,11 @@ class VoxDesigner {
   }
 
   handleGlobalMouseMove(e) {
+    if (this.isMarquee) {
+      this.updateMarquee(e);
+      return;
+    }
+
     if (!this.dragMode) return;
 
     const dx = e.clientX - this.dragStart.x;
@@ -1876,11 +1881,6 @@ class VoxDesigner {
     if (!this.selectedComponent) return;
     const comp = this.selectedComponent;
     const align = (comp.props && comp.props.Align) || 'alNone';
-
-    if (this.isMarquee) {
-      this.updateMarquee(e);
-      return;
-    }
 
     if (this.dragMode === 'move') {
       if (!this._moveSnapshotTaken && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) {
