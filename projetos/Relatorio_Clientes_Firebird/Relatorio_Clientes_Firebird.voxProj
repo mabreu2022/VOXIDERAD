@@ -1,0 +1,12 @@
+{
+  "ProjectName": "Relatorio_Clientes_Firebird",
+  "Version": "1.0.0",
+  "TargetPlatform": "Web Browser (HTML5 + REST)",
+  "OutputType": "Executable",
+  "MainForm": "FormRelatorioClientes",
+  "Units": [
+    "FormRelatorioClientes.vox",
+    "FormRelatorioClientes.vxf"
+  ],
+  "Created": "2026-09-21T18:00:00.000Z"
+}

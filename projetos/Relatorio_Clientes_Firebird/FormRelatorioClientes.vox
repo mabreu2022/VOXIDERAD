@@ -1,0 +1,196 @@
+// ==============================================================================
+// projetos/Relatorio_Clientes_Firebird/FormRelatorioClientes.vox
+// Classe de Formulário RAD Gerada para Relatório de Clientes Firebird 5.0
+// ==============================================================================
+
+class FormRelatorioClientes {
+    // ── Definições de Componentes Visuais e Não-Visuais ──────────────────────
+    let mut width: int;
+    let mut height: int;
+    let mut title: str;
+
+    // Componentes de Conexão FireDAC-Like
+    let mut vox_Connection1: TVoxConnection;
+    let mut vox_Query1: TVoxQuery;
+    let mut vox_DataSource1: TVoxDataSource;
+
+    // Componentes do Relatório Delphi/QuickReport-Like
+    let mut ReportClientes: TVoxReport;
+    let mut TitleBand1: TVoxReportBand;
+    let mut lblEmpresa: TVoxReportLabel;
+    let mut lblSubTitulo: TVoxReportLabel;
+    let mut shpDivider: TVoxReportShape;
+
+    let mut PageHeaderBand1: TVoxReportBand;
+    let mut lblH_Id: TVoxReportLabel;
+    let mut lblH_Cod: TVoxReportLabel;
+    let mut lblH_Nome: TVoxReportLabel;
+    let mut lblH_Cid: TVoxReportLabel;
+    let mut lblH_Tel: TVoxReportLabel;
+    let mut lblH_Status: TVoxReportLabel;
+    let mut lblH_Saldo: TVoxReportLabel;
+
+    let mut DetailBand1: TVoxReportBand;
+    let mut dbId: TVoxReportDBText;
+    let mut dbCod: TVoxReportDBText;
+    let mut dbNome: TVoxReportDBText;
+    let mut dbCid: TVoxReportDBText;
+    let mut dbTel: TVoxReportDBText;
+    let mut dbStatus: TVoxReportDBText;
+    let mut dbSaldo: TVoxReportDBText;
+
+    let mut SummaryBand1: TVoxReportBand;
+    let mut lblTotRegistros: TVoxReportLabel;
+    let mut lblTotAcumulado: TVoxReportLabel;
+    let mut dbTotalSaldo: TVoxReportDBText;
+
+    let mut FooterBand1: TVoxReportBand;
+    let mut sysDateTime: TVoxReportSysData;
+    let mut sysPageCount: TVoxReportSysData;
+
+    // ── Construtor e Inicialização dos Componentes ───────────────────────────
+    new() {
+        this.title = "Relatório de Clientes — Banco Firebird 5.0";
+        this.width = 760;
+        this.height = 660;
+
+        // 1. Conexão Firebird
+        this.vox_Connection1 = new TVoxConnection();
+        this.vox_Connection1.driverName = "Firebird";
+        this.vox_Connection1.IP = "127.0.0.1";
+        this.vox_Connection1.Porta = 3050;
+        this.vox_Connection1.database = "projetos/Relatorio_Clientes_Firebird/dados/clientes.fdb";
+        this.vox_Connection1.login = "SYSDBA";
+        this.vox_Connection1.senha = "masterkey";
+        this.vox_Connection1.vendorLib = "fbclient.dll";
+        this.vox_Connection1.connected = true;
+
+        // 2. Query de Clientes
+        this.vox_Query1 = new TVoxQuery();
+        this.vox_Query1.connection = "vox_Connection1";
+        this.vox_Query1.sql = "SELECT ID, CODIGO, NOME, EMAIL, TELEFONE, CIDADE, UF, SALDO, STATUS FROM CLIENTES ORDER BY ID";
+        this.vox_Query1.active = true;
+
+        // 3. DataSource
+        this.vox_DataSource1 = new TVoxDataSource();
+        this.vox_DataSource1.dataSet = "vox_Query1";
+
+        // 4. Componente Principal de Relatório
+        this.ReportClientes = new TVoxReport();
+        this.ReportClientes.left = 20;
+        this.ReportClientes.top = 55;
+        this.ReportClientes.width = 720;
+        this.ReportClientes.height = 590;
+        this.ReportClientes.reportTitle = "RELATÓRIO DE CLIENTES CADASTRADOS";
+        this.ReportClientes.pageOrientation = "poPortrait";
+        this.ReportClientes.pageSize = "psA4";
+        this.ReportClientes.marginLeft = 10;
+        this.ReportClientes.marginRight = 10;
+        this.ReportClientes.marginTop = 15;
+        this.ReportClientes.marginBottom = 15;
+        this.ReportClientes.dataSource = "vox_DataSource1";
+
+        // 5. Faixas (Bands) e Elementos de Relatório
+        // Title Band
+        this.TitleBand1 = new TVoxReportBand();
+        this.TitleBand1.parent = "ReportClientes";
+        this.TitleBand1.bandType = "rbTitle";
+        this.TitleBand1.height = 58;
+
+        this.lblEmpresa = new TVoxReportLabel();
+        this.lblEmpresa.parent = "TitleBand1";
+        this.lblEmpresa.caption = "VOX ERP SISTEMAS — GESTÃO EMPRESARIAL";
+
+        this.lblSubTitulo = new TVoxReportLabel();
+        this.lblSubTitulo.parent = "TitleBand1";
+        this.lblSubTitulo.caption = "Listagem Analítica de Clientes (Base Firebird 5.0 — 20 Registros)";
+
+        this.shpDivider = new TVoxReportShape();
+        this.shpDivider.parent = "TitleBand1";
+
+        // Page Header Band
+        this.PageHeaderBand1 = new TVoxReportBand();
+        this.PageHeaderBand1.parent = "ReportClientes";
+        this.PageHeaderBand1.bandType = "rbPageHeader";
+        this.PageHeaderBand1.height = 30;
+
+        // Detail Band
+        this.DetailBand1 = new TVoxReportBand();
+        this.DetailBand1.parent = "ReportClientes";
+        this.DetailBand1.bandType = "rbDetail";
+        this.DetailBand1.height = 28;
+
+        this.dbId = new TVoxReportDBText();
+        this.dbId.parent = "DetailBand1";
+        this.dbId.dataField = "ID";
+
+        this.dbCod = new TVoxReportDBText();
+        this.dbCod.parent = "DetailBand1";
+        this.dbCod.dataField = "CODIGO";
+
+        this.dbNome = new TVoxReportDBText();
+        this.dbNome.parent = "DetailBand1";
+        this.dbNome.dataField = "NOME";
+
+        this.dbCid = new TVoxReportDBText();
+        this.dbCid.parent = "DetailBand1";
+        this.dbCid.dataField = "CIDADE";
+
+        this.dbTel = new TVoxReportDBText();
+        this.dbTel.parent = "DetailBand1";
+        this.dbTel.dataField = "TELEFONE";
+
+        this.dbStatus = new TVoxReportDBText();
+        this.dbStatus.parent = "DetailBand1";
+        this.dbStatus.dataField = "STATUS";
+
+        this.dbSaldo = new TVoxReportDBText();
+        this.dbSaldo.parent = "DetailBand1";
+        this.dbSaldo.dataField = "SALDO";
+        this.dbSaldo.displayFormat = "Currency (R$ #,##0.00)";
+
+        // Summary Band
+        this.SummaryBand1 = new TVoxReportBand();
+        this.SummaryBand1.parent = "ReportClientes";
+        this.SummaryBand1.bandType = "rbSummary";
+        this.SummaryBand1.height = 40;
+
+        this.lblTotRegistros = new TVoxReportLabel();
+        this.lblTotRegistros.parent = "SummaryBand1";
+        this.lblTotRegistros.caption = "TOTAL: 20 CLIENTES LISTADOS";
+
+        this.lblTotAcumulado = new TVoxReportLabel();
+        this.lblTotAcumulado.parent = "SummaryBand1";
+        this.lblTotAcumulado.caption = "SALDO TOTAL ACUMULADO:";
+
+        this.dbTotalSaldo = new TVoxReportDBText();
+        this.dbTotalSaldo.parent = "SummaryBand1";
+        this.dbTotalSaldo.dataField = "SALDO";
+        this.dbTotalSaldo.displayFormat = "Currency (R$ #,##0.00)";
+
+        // Page Footer Band
+        this.FooterBand1 = new TVoxReportBand();
+        this.FooterBand1.parent = "ReportClientes";
+        this.FooterBand1.bandType = "rbPageFooter";
+        this.FooterBand1.height = 28;
+
+        this.sysDateTime = new TVoxReportSysData();
+        this.sysDateTime.parent = "FooterBand1";
+        this.sysDateTime.sysDataType = "sdDateTime";
+
+        this.sysPageCount = new TVoxReportSysData();
+        this.sysPageCount.parent = "FooterBand1";
+        this.sysPageCount.sysDataType = "sdPageCount";
+    }
+
+    // ── Métodos de Ação e Eventos ───────────────────────────────────────────
+    public procedure ImprimirRelatorio() {
+        println("[FormRelatorioClientes] Disparando impressão do relatório de clientes Firebird...");
+    }
+
+    public procedure AtualizarDados() {
+        println("[FormRelatorioClientes] Recarregando registros do Firebird...");
+        this.vox_Query1.Close();
+        this.vox_Query1.Open();
+    }
+}

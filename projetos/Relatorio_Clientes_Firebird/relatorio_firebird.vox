@@ -1,0 +1,67 @@
+// ==============================================================================
+// projetos/Relatorio_Clientes_Firebird/relatorio_firebird.vox
+// Demonstração em Linguagem Vox de Consulta e Listagem de Relatório com Firebird
+// ==============================================================================
+
+fn main() {
+    println("================================================================================");
+    println("      VOX PROGRAMMING LANGUAGE — RELATÓRIO DE CLIENTES (FIREBIRD 5.0)           ");
+    println("================================================================================");
+
+    // 1. Conexão com o banco de dados Firebird
+    let conn_str = "database=D:\\Projetos AntiGravity\\linguagem\\projetos\\Relatorio_Clientes_Firebird\\dados\\clientes.fdb;host=127.0.0.1;port=3050;user=SYSDBA;password=masterkey";
+    
+    println("[Vox Engine] Conectando ao Firebird na porta 3050...");
+    let fb = firebird_connect(conn_str);
+    println("[Vox Engine] Conexão estabelecida com sucesso!");
+
+    // 2. Consulta SQL com ordenação por ID
+    let sql = "SELECT ID, CODIGO, NOME, CIDADE, UF, SALDO, STATUS FROM CLIENTES ORDER BY ID";
+    println("[Vox Engine] Executando Query: " + sql);
+    let rows = firebird_query(fb, sql);
+
+    println("\n--------------------------------------------------------------------------------");
+    println(" ID  | CÓDIGO  | NOME DO CLIENTE                     | CIDADE/UF         | SALDO (R$) ");
+    println("--------------------------------------------------------------------------------");
+
+    let mut contador: int = 0;
+    let mut total_saldo: float = 0.0;
+    let mut ativos: int = 0;
+
+    let total_linhas = len(rows);
+    let mut i: int = 0;
+
+    while i < total_linhas {
+        let row = rows[i];
+        contador = contador + 1;
+        let id = row["ID"];
+        let cod = row["CODIGO"];
+        let nome = row["NOME"];
+        let cid = row["CIDADE"];
+        let uf = row["UF"];
+        let saldo = float(row["SALDO"]);
+        let status = row["STATUS"];
+
+        total_saldo = total_saldo + saldo;
+        if status == "Ativo" {
+            ativos = ativos + 1;
+        }
+
+        let cid_uf = str(cid) + "/" + str(uf);
+        println(str(id) + " | " + str(cod) + " | " + str(nome) + " | " + cid_uf + " | " + str(saldo) + " (" + str(status) + ")");
+        i = i + 1;
+    }
+
+    println("--------------------------------------------------------------------------------");
+    println(" RESUMO GERAL DO RELATÓRIO:");
+    println(" • Total de Clientes Listados: " + str(contador));
+    println(" • Clientes Ativos:            " + str(ativos));
+    println(" • Saldo Acumulado:            R$ " + str(total_saldo));
+    println("================================================================================");
+
+    // 3. Fechar conexão
+    firebird_close(fb);
+    println("[Vox Engine] Conexão Firebird liberada com sucesso.");
+}
+
+main();

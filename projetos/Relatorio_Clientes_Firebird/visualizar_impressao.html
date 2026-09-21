@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Relatório de Clientes — Vox Firebird 5.0</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ==========================================================================
+       ESTILOS GERAIS DE TELA E SIMULAÇÃO DE FOLHA A4
+       ========================================================================== */
+    :root {
+      --primary: #0284c7;
+      --primary-dark: #0369a1;
+      --navy: #0f172a;
+      --slate-dark: #1e293b;
+      --slate-muted: #64748b;
+      --border-color: #cbd5e1;
+      --bg-page: #f1f5f9;
+      --card-bg: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg-page);
+      color: #1e293b;
+      font-size: 11pt;
+      line-height: 1.4;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Barra Superior Flutuante de Controle ──────────────────────────────── */
+    .top-action-bar {
+      position: sticky;
+      top: 0;
+      z-index: 999;
+      background: #0f172a;
+      color: #ffffff;
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      border-bottom: 1px solid #334155;
+    }
+
+    .top-action-bar .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: -0.3px;
+    }
+
+    .top-action-bar .brand-badge {
+      background: #0284c7;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      text-transform: uppercase;
+    }
+
+    .top-action-bar .actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn {
+      appearance: none;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .btn-print {
+      background: #0284c7;
+      color: #ffffff;
+    }
+    .btn-print:hover {
+      background: #0369a1;
+      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
+    }
+
+    .btn-pdf {
+      background: #dc2626;
+      color: #ffffff;
+    }
+    .btn-pdf:hover {
+      background: #b91c1c;
+      box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);
+    }
+
+    .btn-secondary {
+      background: #334155;
+      color: #e2e8f0;
+    }
+    .btn-secondary:hover {
+      background: #475569;
+    }
+
+    /* ── Folha de Papel A4 com Diagramação Profissional ────────────────────── */
+    .sheet-wrapper {
+      padding: 30px 15px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .a4-sheet {
+      background: #ffffff;
+      width: 210mm;
+      min-height: 297mm;
+      padding: 15mm 15mm 20mm 15mm;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+      border-radius: 4px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Cabeçalho do Relatório (Title Band) ─────────────────────────────────── */
+    .report-header {
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .header-logo-area {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-logo-icon {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: white;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 2px 6px rgba(2, 132, 199, 0.3);
+    }
+
+    .header-titles h1 {
+      font-size: 16pt;
+      font-weight: 800;
+      color: var(--navy);
+      letter-spacing: -0.5px;
+      line-height: 1.1;
+    }
+
+    .header-titles h2 {
+      font-size: 11pt;
+      font-weight: 600;
+      color: var(--primary);
+      margin-top: 3px;
+    }
+
+    .header-titles .subtitle {
+      font-size: 8.5pt;
+      color: var(--slate-muted);
+      margin-top: 2px;
+    }
+
+    .header-meta {
+      text-align: right;
+      font-size: 8pt;
+      color: var(--slate-muted);
+      line-height: 1.5;
+    }
+
+    .header-meta .tag-live {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #ecfdf5;
+      color: #047857;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 7.5pt;
+      border: 1px solid #a7f3d0;
+      margin-bottom: 4px;
+    }
+
+    /* ── Cartões de Resumo / KPI (Executivo) ────────────────────────────────── */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .kpi-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 8px 12px;
+      border-left: 3px solid var(--primary);
+    }
+
+    .kpi-card.success { border-left-color: #10b981; }
+    .kpi-card.warning { border-left-color: #f59e0b; }
+    .kpi-card.neutral { border-left-color: #64748b; }
+
+    .kpi-card .kpi-label {
+      font-size: 7.5pt;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--slate-muted);
+      letter-spacing: 0.3px;
+    }
+
+    .kpi-card .kpi-value {
+      font-size: 12pt;
+      font-weight: 800;
+      color: var(--navy);
+      margin-top: 2px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ── Tabela de Dados (PageHeader + Detail Band) ─────────────────────────── */
+    .report-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 8.5pt;
+      margin-bottom: 16px;
+    }
+
+    .report-table thead th {
+      background: #0f172a;
+      color: #ffffff;
+      padding: 7px 6px;
+      font-size: 7.5pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      border-top: 1px solid #0f172a;
+      border-bottom: 1px solid #0f172a;
+    }
+
+    .report-table tbody td {
+      padding: 5.5px 6px;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: middle;
+    }
+
+    .report-table tbody tr:hover {
+      background-color: #f1f5f9 !important;
+    }
+
+    .client-name {
+      font-weight: 600;
+      color: var(--navy);
+    }
+
+    .client-sub {
+      font-size: 7.5pt;
+      color: var(--slate-muted);
+    }
+
+    .badge-uf {
+      background: #e2e8f0;
+      color: #334155;
+      font-size: 7pt;
+      font-weight: 700;
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 7pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.2px;
+    }
+
+    .badge-success { background: #dcfce7; color: #15803d; }
+    .badge-warning { background: #fef3c7; color: #b45309; }
+    .badge-danger  { background: #fee2e2; color: #b91c1c; }
+
+    .text-center { text-align: center; }
+    .text-right { text-align: right; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    .font-bold { font-weight: 700; }
+    .text-navy { color: var(--navy); }
+    .text-primary { color: var(--primary); }
+    .text-muted { color: var(--slate-muted); }
+    .text-sm { font-size: 8pt; }
+
+    /* ── Faixa de Resumo / Totais (Summary Band) ────────────────────────────── */
+    .summary-band {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-left: 4px solid #10b981;
+      border-radius: 4px;
+      padding: 10px 14px;
+      margin-top: auto;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .summary-band .summary-left {
+      font-size: 9pt;
+      color: #334155;
+      font-weight: 600;
+    }
+
+    .summary-band .summary-right {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .summary-band .summary-label {
+      font-size: 8.5pt;
+      font-weight: 700;
+      color: #475569;
+      text-transform: uppercase;
+    }
+
+    .summary-band .summary-amount {
+      font-size: 13pt;
+      font-weight: 800;
+      color: #047857;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ── Rodapé de Página (PageFooter Band) ─────────────────────────────────── */
+    .report-footer {
+      border-top: 1px solid #cbd5e1;
+      padding-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 7.5pt;
+      color: var(--slate-muted);
+    }
+
+    .footer-auth {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ==========================================================================
+       REGRAS EXCLUSIVAS DE IMPRESSÃO (@media print)
+       ========================================================================== */
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 10mm 12mm 10mm 12mm;
+      }
+
+      body {
+        background: #ffffff !important;
+        font-size: 9pt;
+        color: #000000;
+      }
+
+      .top-action-bar, .no-print {
+        display: none !important;
+      }
+
+      .sheet-wrapper {
+        padding: 0 !important;
+        display: block !important;
+      }
+
+      .a4-sheet {
+        width: 100% !important;
+        min-height: auto !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+      }
+
+      .report-table thead th {
+        background: #1e293b !important;
+        color: #ffffff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .report-table tbody tr {
+        page-break-inside: avoid;
+      }
+
+      .badge, .tag-live, .kpi-card, .summary-band {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Barra Superior de Controle e Impressão (Não sai na impressão) -->
+  <header class="top-action-bar no-print">
+    <div class="brand">
+      <span style="font-size: 18px;">🪐</span>
+      <span>Vox Studio RAD — Componentes de Report</span>
+      <span class="brand-badge">Firebird 5.0</span>
+    </div>
+    <div class="actions">
+      <button class="btn btn-secondary" onclick="window.location.reload();" title="Recarregar dados">
+        <span>🔄</span> Atualizar
+      </button>
+      <button class="btn btn-pdf" onclick="window.print();" title="Salvar como PDF">
+        <span>📄</span> Salvar PDF
+      </button>
+      <button class="btn btn-print" onclick="window.print();" title="Imprimir Relatório (Ctrl + P)">
+        <span>🖨️</span> Imprimir Relatório
+      </button>
+    </div>
+  </header>
+
+  <!-- Simulação da Página A4 -->
+  <main class="sheet-wrapper">
+    <article class="a4-sheet">
+
+      <!-- Title Band -->
+      <header class="report-header">
+        <div class="header-logo-area">
+          <div class="header-logo-icon">📊</div>
+          <div class="header-titles">
+            <h1>VOX ERP SISTEMAS CORPORATIVOS</h1>
+            <h2>RELATÓRIO GERENCIAL DE CLIENTES CADASTRADOS</h2>
+            <div class="subtitle">Emissão de listagem analítica para auditoria, controle financeiro e impressão</div>
+          </div>
+        </div>
+
+        <div class="header-meta">
+          <div><span class="tag-live">🔥 FIREBIRD 5.0 LIVE</span></div>
+          <div><strong>Base:</strong> <code>dados/clientes.fdb</code></div>
+          <div><strong>Emissão:</strong> 21/09/2026, 17:59:39</div>
+          <div><strong>Usuário:</strong> SYSDBA</div>
+          <div><strong>Registros:</strong> 20 clientes</div>
+        </div>
+      </header>
+
+      <!-- Cartões de Resumo Executivo (KPIs) -->
+      <section class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-label">Total Cadastrado</div>
+          <div class="kpi-value">20</div>
+        </div>
+        <div class="kpi-card success">
+          <div class="kpi-label">Clientes Ativos</div>
+          <div class="kpi-value">16</div>
+        </div>
+        <div class="kpi-card warning">
+          <div class="kpi-label">Pendentes / Bloq.</div>
+          <div class="kpi-value">4</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Saldo Acumulado</div>
+          <div class="kpi-value" style="font-size: 11pt; color: #0284c7;">R$ 536.054,95</div>
+        </div>
+      </section>
+
+      <!-- Table Section (PageHeaderBand + DetailBand) -->
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th class="text-center" style="width: 32px;">#</th>
+            <th style="width: 65px;">Código</th>
+            <th>Nome do Cliente / Razão Social</th>
+            <th style="width: 125px;">CPF / CNPJ</th>
+            <th style="width: 115px;">Cidade / UF</th>
+            <th style="width: 105px;">Telefone</th>
+            <th class="text-center" style="width: 70px;">Status</th>
+            <th class="text-right" style="width: 95px;">Saldo Atual</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+      <tr style="background-color: #ffffff;">
+        <td class="text-center font-mono text-muted">01</td>
+        <td class="font-mono font-bold text-navy">CLI-001</td>
+        <td>
+          <div class="client-name">Mauricio Abreu Consultoria & Software</div>
+          <div class="client-sub">mauricio@voxlang.org</div>
+        </td>
+        <td class="font-mono text-sm">12.345.678/0001-90</td>
+        <td>Rio de Janeiro <span class="badge-uf">RJ</span></td>
+        <td class="text-sm">(21) 98888-1111</td>
+        <td class="text-center"><span class="badge badge-success">Ativo</span></td>
+        <td class="text-right font-bold text-primary font-mono">R$ 15.420,50</td>
+      </tr>
+    
+
+      <tr style="background-color: #f8fafc;">
+        <td class="text-center font-mono text-muted">02</td>
+        <td class="font-mono font-bold text-navy">CLI-002</td>
+        <td>
+          <div class="client-name">Beatriz Lima Tecnologia Digital ME</div>
+          <div class="client-sub">beatriz.lima@tech.com.br</div>
+        </td>
+        <td class="font-mono text-sm">23.456.789/0001-01</td>
+        <td>São Paulo <span class="badge-uf">SP</span></td>
+        <td class="text-sm">(11) 97777-2222</td>
+        <td class="text-center"><span class="badge badge-success">Ativo</span></td>
+        <td class="text-right font-bold text-primary font-mono">R$ 28.350,00</td>
+      </tr>
+    
+
+      <tr style="background-color: #ffffff;">
+        <td class="text-center font-mono text-muted">03</td>
+        <td class="font-mono font-bold text-navy">CLI-003</td>
+        <td>
+          <div class="client-name">Carlos Eduardo & Filhos Distribuidora</div>
+          <div class="client-sub">carlos.filhos@comercio.com.br</div>
+        </td>
+        <td class="font-mono text-sm">34.567.890/0001-12</td>
+        <td>Belo Horizonte <span class="badge-uf">MG</span></td>
+        <td class="text-sm">(31) 96666-3333</td>
+        <td class="text-center"><span class="badge badge-warning">Pendente</span></td>
+        <td class="text-right font-bold text-primary font-mono">R$ 4.890,75</td>
+      </tr>
+    
+
+      <tr style="background-color: #f8fafc;">
+        <td class="text-center font-mono text-muted">04</td>
+        <td class="font-mono font-bold text-navy">CLI-004</td>
+        <td>
+          <div class="client-name">Daniela Rocha Logística e Transportes</div>
+          <div class="client-sub">contato@roanalog.com.br</div>
+        </td>
+        <td class="font-mono text-sm">45.678.901/0001-23</td>
+        <td>Curitiba <span class="badge-uf">PR</span></td>
+        <td class="text-sm">(41) 95555-4444</td>
+        <td class="text-center"><span class="badge badge-success">Ativo</span></td>
+        <td class="text-right font-bold text-primary font-mono">R$ 38.900,20</td>
+      </tr>
+    
+
+      <tr style="background-color: #ffffff;">
+        <td class="text-center font-mono text-muted">05</td>
+        <td class="font-mono font-bold text-navy">CLI-005</td>
+        <td>
+          <div class="client-name">Eduardo Martins Engenharia e Projetos</div>
+          <div class="client-sub">eduardo@emartins.eng.br</div>
+        </td>
+        <td class="font-mono text-sm">56.789.012/0001-34</td>
+        <td>Porto Alegre <span class="badge-uf">RS</span></td>
+        <td class="text-sm">(51) 94444-5555</td>
+        <td class="text-center"><span class="badge badge-success">Ativo</span></td>
+        <td class="text-right font-bold text-primary font-mono">R$ 12.780,00</td>
+      </tr>
+    
+
+      <tr style="background-color: #f8fafc;">
+        <td class="text-center font-mono text-muted">06</td>
+        <td class="font-mono font-bold text-navy">CLI-006</td>
+        <td>
+          <div class="client-name">Fernanda Souza Contabilidade Corporativa</div>
+          <div class="client-sub">fernanda@souzacontab.com.br</div>
+        </td>
+        <td class="font-mono text-sm">67.890.123/0001-45</td>
+        <td>Salvador <span class="badge-uf">BA</span></td>
+        <td class="text-sm">(71) 93333-6666</td>
+        <td class="text-center"><span class="badge badge-warning">Pendente</span></td>
+        <td class="text-right font-bold text-primary font-mono">R$ 9.450,30</td>
+      </tr>
+    
+
+      <tr style="background-color: #ffffff;">
+        <td class="text-center font-mono text-muted">07</td>
+        <td class="font-mono font-bold text-navy">CLI-007</td>
+        <td>
+          <div class="client-name">Gabriel Santos Telecomunicações ME</div>
+          <div class="client-sub">gabriel@gstech.com.br</div>
+        </td>
+        <td class="font-mono text-sm">78.901.234/0001-56</td>
+        <td>Recife <span class="badge-uf">PE</span></td>
+        <td class="text-sm">(81) 92222-7777</td>
+        <td class="text-center"><span class="badge badge-success">Ativo</span></td>
+        <td class="text-right font-bold text-primary font-mono">R$ 18.600,00</td>
+      </tr>
+    
+
+      <tr style="background-color: #f8fafc;">
+        <td class="text-center font-mono text-muted">08</td>
+        <td class="font-mono font-bold text-navy">CLI-008</td>
+        <td>
+          <div class="client-name">Helena Carvalho Distribuidora de Alimentos</div>
+          <div class="client-sub">helena@carvalhodist.com.br</div>
+        </td>
+        <td class="font-mono text-sm">89.012.345/0001-67</td>
+        <td>Fortaleza <span class="badge-uf">CE</span></td>
+        <td class="text-sm">(85) 91111-8888</td>
+        <td class="text-center"><span class="badge badge-success">Ativo</span></td>
+        <td class="text-right font-bold text-primary font-mono">R$ 42.100,90</td>
+      </tr>
+    
+
+      <tr style="background-color: #ffffff;">
+        <td class="text-center font-mono text-muted">09</td>
+        <td class="font-mono font-bold text-navy">CLI-009</td>
+        <td>
+          <div class="client-name">Igor Silveira Automação Industrial</div>
+          <div class="client-sub">igor@silveiraautomacao.com.br</div>
+        </td>
+        <td class="font-mono text-sm">90.123.456/0001-78</td>
+        <td>Campinas <span class="badge-uf">SP</span></td>
+        <td class="text-sm">(19) 98765-4321</td>
+        <td class="text-center"><span class="badge badge-success">Ativo</span></td>
+        <td class="text-right font-bold text-primary font-mono">R$ 21.500,00</td>
+      </tr>
+    
+
+      <tr style="background-color: #f8fafc;">
+        <td class="text-center font-mono text-muted">10</td>
+        <td class="font-mono font-bold text-navy">CLI-010</td>
+        <td>
+          <div class="client-name">Juliana Mendes Design & Marketing Digital</div>
+          <div class="client-sub">juliana@mendesstudio.art.br</div>
+        </td>
+        <td class="font-mono text-sm">01.234.567/0001-89</td>
+        <td>Florianópolis <span class="badge-uf">SC</span></td>
+        <td class="text-sm">(48) 99876-5432</td>
+        <td class="text-center"><span class="badge badge-success">Ativo</span></td>
+        <td class="text-right font-bold text-primary font-mono">R$ 7.820,40</td>
+      </tr>
+    
+
+      <tr style="background-color: #ffffff;">
+        <td class="text-center font-mono text-muted">11</td>
+        <td class="font-mono font-bold text-navy">CLI-011</td>
+        <td>
+          <div class="client-name">Lucas Ferreira Metalúrgica e Usinagem</div>
+          <div class="client-sub">vendas@ferreirametal.com.br</div>
+        </td>
+        <td class="font-mono text-sm">11.223.344/0001-90</td>
+        <td>Vitória <span class="badge-uf">ES</span></td>
+        <td class="text-sm">(27) 99765-1234</td>
+        <td class="text-center"><span class="badge badge-success">Ativo</span></td>
+        <td class="text-right font-bold text-primary font-mono">R$ 33.400,00</td>
+      </tr>
+    
+
+      <tr style="background-color: #f8fafc;">
+        <td class="text-center font-mono text-muted">12</td>
+        <td class="font-mono font-bold text-navy">CLI-012</td>
+        <td>
+          <div class="client-name">Mariana Costa Farmacêutica e Saúde</div>
+          <div class="client-sub">mariana@costafarma.com.br</div>
+        </td>
+        <td class="font-mono text-sm">22.334.455/0001-01</td>
+        <td>Goiânia <span class="badge-uf">GO</span></td>
+        <td class="text-sm">(62) 98123-4567</td>
+        <td class="text-center"><span class="badge badge-success">Ativo</span></td>
+        <td class="text-right font-bold text-primary font-mono">R$ 16.950,80</td>
+      </tr>
+    
+
+      <tr style="background-color: #ffffff;">
+        <td class="text-center font-mono text-muted">13</td>
+        <td class="font-mono font-bold text-navy">CLI-013</td>
+        <td>
+          <div class="client-name">Nelson Oliveira Agronegócios S/A</div>
+          <div class="client-sub">nelson@agrooliveira.com.br</div>
+        </td>
+        <td class="font-mono text-sm">33.445.566/0001-12</td>
+        <td>Campo Grande <span class="badge-uf">MS</span></td>
+        <td class="text-sm">(67) 99234-5678</td>
+        <td class="text-center"><span class="badge badge-success">Ativo</span></td>
+        <td class="text-right font-bold text-primary font-mono">R$ 65.200,00</td>
+      </tr>
+    
+
+      <tr style="background-color: #f8fafc;">
+        <td class="text-center font-mono text-muted">14</td>
+        <td class="font-mono font-bold text-navy">CLI-014</td>
+        <td>
+          <div class="client-name">Patrícia Ribeiro Cosméticos Naturais</div>
+          <div class="client-sub">patricia@ribeirobio.com.br</div>
+        </td>
+        <td class="font-mono text-sm">44.556.677/0001-23</td>
+        <td>Belém <span class="badge-uf">PA</span></td>
+        <td class="text-sm">(91) 98345-6789</td>
+        <td class="text-center"><span class="badge badge-danger">Bloqueado</span></td>
+        <td class="text-right font-bold text-primary font-mono">R$ 8.640,00</td>
+      </tr>
+    
+
+      <tr style="background-color: #ffffff;">
+        <td class="text-center font-mono text-muted">15</td>
+        <td class="font-mono font-bold text-navy">CLI-015</td>
+        <td>
+          <div class="client-name">Rodrigo Alencar Empreendimentos Imobiliários</div>
+          <div class="client-sub">rodrigo@alencaremp.com.br</div>
+        </td>
+        <td class="font-mono text-sm">55.667.788/0001-34</td>
+        <td>Brasília <span class="badge-uf">DF</span></td>
+        <td class="text-sm">(61) 99456-7890</td>
+        <td class="text-center"><span class="badge badge-success">Ativo</span></td>
+        <td class="text-right font-bold text-primary font-mono">R$ 84.500,00</td>
+      </tr>
+    
+
+      <tr style="background-color: #f8fafc;">
+        <td class="text-center font-mono text-muted">16</td>
+        <td class="font-mono font-bold text-navy">CLI-016</td>
+        <td>
+          <div class="client-name">Sabrina Guimarães Comércio Varejista</div>
+          <div class="client-sub">sabrina@guimaraesvar.com.br</div>
+        </td>
+        <td class="font-mono text-sm">66.778.899/0001-45</td>
+        <td>Natal <span class="badge-uf">RN</span></td>
+        <td class="text-sm">(84) 98567-8901</td>
+        <td class="text-center"><span class="badge badge-success">Ativo</span></td>
+        <td class="text-right font-bold text-primary font-mono">R$ 11.320,60</td>
+      </tr>
+    
+
+      <tr style="background-color: #ffffff;">
+        <td class="text-center font-mono text-muted">17</td>
+        <td class="font-mono font-bold text-navy">CLI-017</td>
+        <td>
+          <div class="client-name">Tiago Barbosa Segurança Eletrônica</div>
+          <div class="client-sub">tiago@barbosaseg.com.br</div>
+        </td>
+        <td class="font-mono text-sm">77.889.900/0001-56</td>
+        <td>Teresina <span class="badge-uf">PI</span></td>
+        <td class="text-sm">(86) 99678-9012</td>
+        <td class="text-center"><span class="badge badge-warning">Pendente</span></td>
+        <td class="text-right font-bold text-primary font-mono">R$ 14.180,00</td>
+      </tr>
+    
+
+      <tr style="background-color: #f8fafc;">
+        <td class="text-center font-mono text-muted">18</td>
+        <td class="font-mono font-bold text-navy">CLI-018</td>
+        <td>
+          <div class="client-name">Vanessa Lima Importação e Exportação</div>
+          <div class="client-sub">vanessa@limatrading.com.br</div>
+        </td>
+        <td class="font-mono text-sm">88.990.011/0001-67</td>
+        <td>São Luís <span class="badge-uf">MA</span></td>
+        <td class="text-sm">(98) 98789-0123</td>
+        <td class="text-center"><span class="badge badge-success">Ativo</span></td>
+        <td class="text-right font-bold text-primary font-mono">R$ 51.700,50</td>
+      </tr>
+    
+
+      <tr style="background-color: #ffffff;">
+        <td class="text-center font-mono text-muted">19</td>
+        <td class="font-mono font-bold text-navy">CLI-019</td>
+        <td>
+          <div class="client-name">Wagner Pires Soluções Ambientais</div>
+          <div class="client-sub">wagner@piresambiental.eco.br</div>
+        </td>
+        <td class="font-mono text-sm">99.001.122/0001-78</td>
+        <td>Manaus <span class="badge-uf">AM</span></td>
+        <td class="text-sm">(92) 99890-1234</td>
+        <td class="text-center"><span class="badge badge-success">Ativo</span></td>
+        <td class="text-right font-bold text-primary font-mono">R$ 27.890,00</td>
+      </tr>
+    
+
+      <tr style="background-color: #f8fafc;">
+        <td class="text-center font-mono text-muted">20</td>
+        <td class="font-mono font-bold text-navy">CLI-020</td>
+        <td>
+          <div class="client-name">Yasmin Castro Consultoria Financeira</div>
+          <div class="client-sub">yasmin@castrofin.com.br</div>
+        </td>
+        <td class="font-mono text-sm">10.112.233/0001-89</td>
+        <td>Maceió <span class="badge-uf">AL</span></td>
+        <td class="text-sm">(82) 98901-2345</td>
+        <td class="text-center"><span class="badge badge-success">Ativo</span></td>
+        <td class="text-right font-bold text-primary font-mono">R$ 22.460,00</td>
+      </tr>
+    
+        </tbody>
+      </table>
+
+      <!-- Summary Band -->
+      <section class="summary-band">
+        <div class="summary-left">
+          <span>Total de <strong>20</strong> registros impressos com sucesso da base Firebird.</span>
+          <span style="margin-left: 10px; color: #64748b; font-size: 8pt;">(Média por cliente: R$ 26.802,75)</span>
+        </div>
+        <div class="summary-right">
+          <span class="summary-label">Total Geral:</span>
+          <span class="summary-amount">R$ 536.054,95</span>
+        </div>
+      </section>
+
+      <!-- PageFooter Band -->
+      <footer class="report-footer">
+        <div class="footer-auth">
+          <span>🔒 Documento emitido via <strong>Vox Studio RAD (vox_Report)</strong></span>
+          <span>•</span>
+          <span>Driver: Firebird 5.0 (Porta 3050)</span>
+        </div>
+        <div>
+          <span>Página <strong>1</strong> de <strong>1</strong></span>
+        </div>
+      </footer>
+
+    </article>
+  </main>
+
+  <script>
+    // Atalho de teclado para impressão rápida: Ctrl + P
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+        e.preventDefault();
+        window.print();
+      }
+    });
+  </script>
+</body>
+</html>
+  

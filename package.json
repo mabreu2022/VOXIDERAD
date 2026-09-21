@@ -1,0 +1,27 @@
+{
+  "name": "vox-ide-rad",
+  "version": "1.0.0",
+  "description": "Vox Studio RAD — Ambiente de Desenvolvimento Integrado Visual Delphi-Like para a Linguagem Vox",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [
+    "vox",
+    "rad",
+    "ide",
+    "delphi",
+    "form-designer",
+    "report-engine",
+    "vcl",
+    "firedac"
+  ],
+  "author": "Mauricio Abreu",
+  "license": "MIT",
+  "dependencies": {
+    "mssql": "^12.7.2",
+    "mysql2": "^3.24.4",
+    "node-firebird": "^2.16.0"
+  }
+}

@@ -1,0 +1,500 @@
+{
+  "name": "FormRelatorioClientes",
+  "title": "Relatório de Clientes — Banco Firebird 5.0",
+  "width": 760,
+  "height": 660,
+  "components": [
+    {
+      "id": "comp_conn_fb",
+      "name": "vox_Connection1",
+      "type": "vox_Connection",
+      "left": 20,
+      "top": 10,
+      "width": 38,
+      "height": 38,
+      "props": {
+        "DriverName": "Firebird",
+        "IP": "127.0.0.1",
+        "Porta": 3050,
+        "Database": "projetos/Relatorio_Clientes_Firebird/dados/clientes.fdb",
+        "Login": "SYSDBA",
+        "Senha": "masterkey",
+        "VendorLib": "fbclient.dll",
+        "Connected": true
+      }
+    },
+    {
+      "id": "comp_qry_fb",
+      "name": "vox_Query1",
+      "type": "vox_Query",
+      "left": 68,
+      "top": 10,
+      "width": 38,
+      "height": 38,
+      "props": {
+        "Connection": "vox_Connection1",
+        "SQL": "SELECT ID, CODIGO, NOME, EMAIL, TELEFONE, CIDADE, UF, SALDO, STATUS FROM CLIENTES ORDER BY ID",
+        "Active": true
+      }
+    },
+    {
+      "id": "comp_ds_fb",
+      "name": "vox_DataSource1",
+      "type": "vox_DataSource",
+      "left": 116,
+      "top": 10,
+      "width": 38,
+      "height": 38,
+      "props": {
+        "DataSet": "vox_Query1",
+        "AutoEdit": true
+      }
+    },
+    {
+      "id": "rep_clientes",
+      "name": "ReportClientes",
+      "type": "vox_Report",
+      "left": 20,
+      "top": 55,
+      "width": 720,
+      "height": 590,
+      "props": {
+        "ReportTitle": "RELATÓRIO DE CLIENTES CADASTRADOS",
+        "PageOrientation": "poPortrait",
+        "PageSize": "psA4",
+        "MarginLeft": 10,
+        "MarginRight": 10,
+        "MarginTop": 15,
+        "MarginBottom": 15,
+        "DataSource": "vox_DataSource1",
+        "FontFamily": "Segoe UI, Arial, sans-serif",
+        "FontSize": 10
+      }
+    },
+    {
+      "id": "b_title",
+      "name": "TitleBand1",
+      "type": "vox_ReportBand",
+      "parent": "ReportClientes",
+      "left": 10,
+      "top": 36,
+      "width": 700,
+      "height": 58,
+      "props": {
+        "BandType": "rbTitle",
+        "Height": 58,
+        "Color": "#f8fafc",
+        "BorderBottom": true
+      }
+    },
+    {
+      "id": "lbl_title_empresa",
+      "name": "lblEmpresa",
+      "type": "vox_ReportLabel",
+      "parent": "TitleBand1",
+      "left": 15,
+      "top": 6,
+      "width": 460,
+      "height": 24,
+      "props": {
+        "Caption": "VOX ERP SISTEMAS — GESTÃO EMPRESARIAL",
+        "FontSize": 13,
+        "FontBold": true,
+        "FontColor": "#0284c7"
+      }
+    },
+    {
+      "id": "lbl_subtitle",
+      "name": "lblSubTitulo",
+      "type": "vox_ReportLabel",
+      "parent": "TitleBand1",
+      "left": 15,
+      "top": 30,
+      "width": 460,
+      "height": 18,
+      "props": {
+        "Caption": "Listagem Analítica de Clientes (Base Firebird 5.0 — 20 Registros)",
+        "FontSize": 9,
+        "FontItalic": true,
+        "FontColor": "#64748b"
+      }
+    },
+    {
+      "id": "shp_title_bar",
+      "name": "shpDivider",
+      "type": "vox_ReportShape",
+      "parent": "TitleBand1",
+      "left": 15,
+      "top": 52,
+      "width": 670,
+      "height": 2,
+      "props": {
+        "ShapeType": "stHorizontalLine",
+        "PenColor": "#0284c7",
+        "PenWidth": 2
+      }
+    },
+    {
+      "id": "b_page_header",
+      "name": "PageHeaderBand1",
+      "type": "vox_ReportBand",
+      "parent": "ReportClientes",
+      "left": 10,
+      "top": 100,
+      "width": 700,
+      "height": 30,
+      "props": {
+        "BandType": "rbPageHeader",
+        "Height": 30,
+        "Color": "#e2e8f0",
+        "BorderBottom": true
+      }
+    },
+    {
+      "id": "h_id",
+      "name": "lblH_Id",
+      "type": "vox_ReportLabel",
+      "parent": "PageHeaderBand1",
+      "left": 10,
+      "top": 6,
+      "width": 35,
+      "height": 18,
+      "props": {
+        "Caption": "ID",
+        "FontBold": true,
+        "FontSize": 9,
+        "FontColor": "#334155"
+      }
+    },
+    {
+      "id": "h_cod",
+      "name": "lblH_Cod",
+      "type": "vox_ReportLabel",
+      "parent": "PageHeaderBand1",
+      "left": 50,
+      "top": 6,
+      "width": 65,
+      "height": 18,
+      "props": {
+        "Caption": "CÓDIGO",
+        "FontBold": true,
+        "FontSize": 9,
+        "FontColor": "#334155"
+      }
+    },
+    {
+      "id": "h_nome",
+      "name": "lblH_Nome",
+      "type": "vox_ReportLabel",
+      "parent": "PageHeaderBand1",
+      "left": 120,
+      "top": 6,
+      "width": 210,
+      "height": 18,
+      "props": {
+        "Caption": "NOME / RAZÃO SOCIAL",
+        "FontBold": true,
+        "FontSize": 9,
+        "FontColor": "#334155"
+      }
+    },
+    {
+      "id": "h_cid",
+      "name": "lblH_Cid",
+      "type": "vox_ReportLabel",
+      "parent": "PageHeaderBand1",
+      "left": 335,
+      "top": 6,
+      "width": 110,
+      "height": 18,
+      "props": {
+        "Caption": "CIDADE / UF",
+        "FontBold": true,
+        "FontSize": 9,
+        "FontColor": "#334155"
+      }
+    },
+    {
+      "id": "h_tel",
+      "name": "lblH_Tel",
+      "type": "vox_ReportLabel",
+      "parent": "PageHeaderBand1",
+      "left": 450,
+      "top": 6,
+      "width": 95,
+      "height": 18,
+      "props": {
+        "Caption": "TELEFONE",
+        "FontBold": true,
+        "FontSize": 9,
+        "FontColor": "#334155"
+      }
+    },
+    {
+      "id": "h_status",
+      "name": "lblH_Status",
+      "type": "vox_ReportLabel",
+      "parent": "PageHeaderBand1",
+      "left": 550,
+      "top": 6,
+      "width": 55,
+      "height": 18,
+      "props": {
+        "Caption": "STATUS",
+        "FontBold": true,
+        "FontSize": 9,
+        "FontColor": "#334155"
+      }
+    },
+    {
+      "id": "h_saldo",
+      "name": "lblH_Saldo",
+      "type": "vox_ReportLabel",
+      "parent": "PageHeaderBand1",
+      "left": 610,
+      "top": 6,
+      "width": 80,
+      "height": 18,
+      "props": {
+        "Caption": "SALDO",
+        "FontBold": true,
+        "FontSize": 9,
+        "FontColor": "#334155",
+        "Alignment": "taRightJustify"
+      }
+    },
+    {
+      "id": "b_detail",
+      "name": "DetailBand1",
+      "type": "vox_ReportBand",
+      "parent": "ReportClientes",
+      "left": 10,
+      "top": 136,
+      "width": 700,
+      "height": 28,
+      "props": {
+        "BandType": "rbDetail",
+        "Height": 28,
+        "Color": "#ffffff",
+        "BorderBottom": true
+      }
+    },
+    {
+      "id": "d_id",
+      "name": "dbId",
+      "type": "vox_ReportDBText",
+      "parent": "DetailBand1",
+      "left": 10,
+      "top": 5,
+      "width": 35,
+      "height": 18,
+      "props": {
+        "DataField": "ID",
+        "Alignment": "taLeftJustify"
+      }
+    },
+    {
+      "id": "d_cod",
+      "name": "dbCod",
+      "type": "vox_ReportDBText",
+      "parent": "DetailBand1",
+      "left": 50,
+      "top": 5,
+      "width": 65,
+      "height": 18,
+      "props": {
+        "DataField": "CODIGO",
+        "Alignment": "taLeftJustify"
+      }
+    },
+    {
+      "id": "d_nome",
+      "name": "dbNome",
+      "type": "vox_ReportDBText",
+      "parent": "DetailBand1",
+      "left": 120,
+      "top": 5,
+      "width": 210,
+      "height": 18,
+      "props": {
+        "DataField": "NOME",
+        "FontBold": true,
+        "Alignment": "taLeftJustify"
+      }
+    },
+    {
+      "id": "d_cid",
+      "name": "dbCid",
+      "type": "vox_ReportDBText",
+      "parent": "DetailBand1",
+      "left": 335,
+      "top": 5,
+      "width": 110,
+      "height": 18,
+      "props": {
+        "DataField": "CIDADE",
+        "Alignment": "taLeftJustify"
+      }
+    },
+    {
+      "id": "d_tel",
+      "name": "dbTel",
+      "type": "vox_ReportDBText",
+      "parent": "DetailBand1",
+      "left": 450,
+      "top": 5,
+      "width": 95,
+      "height": 18,
+      "props": {
+        "DataField": "TELEFONE",
+        "Alignment": "taLeftJustify"
+      }
+    },
+    {
+      "id": "d_status",
+      "name": "dbStatus",
+      "type": "vox_ReportDBText",
+      "parent": "DetailBand1",
+      "left": 550,
+      "top": 5,
+      "width": 55,
+      "height": 18,
+      "props": {
+        "DataField": "STATUS",
+        "Alignment": "taLeftJustify"
+      }
+    },
+    {
+      "id": "d_saldo",
+      "name": "dbSaldo",
+      "type": "vox_ReportDBText",
+      "parent": "DetailBand1",
+      "left": 610,
+      "top": 5,
+      "width": 80,
+      "height": 18,
+      "props": {
+        "DataField": "SALDO",
+        "DisplayFormat": "Currency (R$ #,##0.00)",
+        "FontBold": true,
+        "FontColor": "#0284c7",
+        "Alignment": "taRightJustify"
+      }
+    },
+    {
+      "id": "b_summary",
+      "name": "SummaryBand1",
+      "type": "vox_ReportBand",
+      "parent": "ReportClientes",
+      "left": 10,
+      "top": 170,
+      "width": 700,
+      "height": 40,
+      "props": {
+        "BandType": "rbSummary",
+        "Height": 40,
+        "Color": "#f1f5f9",
+        "BorderBottom": true
+      }
+    },
+    {
+      "id": "lbl_tot_count",
+      "name": "lblTotRegistros",
+      "type": "vox_ReportLabel",
+      "parent": "SummaryBand1",
+      "left": 15,
+      "top": 10,
+      "width": 240,
+      "height": 20,
+      "props": {
+        "Caption": "TOTAL: 20 CLIENTES LISTADOS",
+        "FontBold": true,
+        "FontColor": "#334155",
+        "FontSize": 9
+      }
+    },
+    {
+      "id": "lbl_tot_label",
+      "name": "lblTotAcumulado",
+      "type": "vox_ReportLabel",
+      "parent": "SummaryBand1",
+      "left": 360,
+      "top": 10,
+      "width": 200,
+      "height": 20,
+      "props": {
+        "Caption": "SALDO TOTAL ACUMULADO:",
+        "FontBold": true,
+        "FontColor": "#1e293b",
+        "Alignment": "taRightJustify",
+        "FontSize": 9
+      }
+    },
+    {
+      "id": "db_tot_saldo",
+      "name": "dbTotalSaldo",
+      "type": "vox_ReportDBText",
+      "parent": "SummaryBand1",
+      "left": 570,
+      "top": 10,
+      "width": 120,
+      "height": 20,
+      "props": {
+        "DataField": "SALDO",
+        "DisplayFormat": "Currency (R$ #,##0.00)",
+        "FontBold": true,
+        "FontColor": "#047857",
+        "Alignment": "taRightJustify",
+        "FontSize": 10
+      }
+    },
+    {
+      "id": "b_footer",
+      "name": "FooterBand1",
+      "type": "vox_ReportBand",
+      "parent": "ReportClientes",
+      "left": 10,
+      "top": 216,
+      "width": 700,
+      "height": 28,
+      "props": {
+        "BandType": "rbPageFooter",
+        "Height": 28,
+        "Color": "#ffffff",
+        "BorderBottom": false
+      }
+    },
+    {
+      "id": "sys_date_time",
+      "name": "sysDateTime",
+      "type": "vox_ReportSysData",
+      "parent": "FooterBand1",
+      "left": 15,
+      "top": 5,
+      "width": 280,
+      "height": 18,
+      "props": {
+        "SysDataType": "sdDateTime",
+        "Alignment": "taLeftJustify",
+        "FontColor": "#64748b",
+        "FontSize": 8.5
+      }
+    },
+    {
+      "id": "sys_page_count",
+      "name": "sysPageCount",
+      "type": "vox_ReportSysData",
+      "parent": "FooterBand1",
+      "left": 470,
+      "top": 5,
+      "width": 220,
+      "height": 18,
+      "props": {
+        "SysDataType": "sdPageCount",
+        "Alignment": "taRightJustify",
+        "FontColor": "#64748b",
+        "FontSize": 8.5
+      }
+    }
+  ]
+}
