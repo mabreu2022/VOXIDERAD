@@ -202,6 +202,26 @@ class VoxReportEngine {
               if (matchedKey) val = record[matchedKey];
             }
           }
+          if (val === undefined && record) {
+            const fLow = field.toLowerCase();
+            if (fLow === 'codigo' || fLow === 'cod') {
+              val = record.codigo || record.CODIGO || (record.id ? 'CLI-' + String(record.id).padStart(3, '0') : '') || (record.ID ? 'CLI-' + String(record.ID).padStart(3, '0') : '');
+            } else if (fLow === 'id') {
+              val = record.id !== undefined ? record.id : (record.ID !== undefined ? record.ID : '');
+            } else if (fLow === 'nome' || fLow === 'cliente') {
+              val = record.nome || record.NOME || '';
+            } else if (fLow === 'saldo' || fLow === 'valor' || fLow === 'total') {
+              val = record.saldo !== undefined ? record.saldo : (record.SALDO !== undefined ? record.SALDO : (record.valor || record.VALOR || 0));
+            } else if (fLow === 'cidade') {
+              val = record.cidade || record.CIDADE || '';
+            } else if (fLow === 'uf' || fLow === 'estado') {
+              val = record.uf || record.UF || '';
+            } else if (fLow === 'telefone' || fLow === 'tel') {
+              val = record.telefone || record.TELEFONE || '';
+            } else if (fLow === 'status') {
+              val = record.status || record.STATUS || '';
+            }
+          }
           if (val === undefined) {
             val = record ? Object.values(record)[0] : field;
           }
@@ -458,6 +478,24 @@ class VoxReportEngine {
 
     this.lastHtml = fullHtml;
     return fullHtml;
+  }
+
+  // --------------------------------------------------------------------------
+  // Renderizar o Relatório Diretamente em um Elemento Contêiner (ex: Runner RAD ou Iframe)
+  // --------------------------------------------------------------------------
+  async renderInto(containerEl, reportComp, formState, records = null) {
+    if (!containerEl) return null;
+    const data = await this.resolveRecords(reportComp, formState, records);
+    const html = this.generateHTML(reportComp, formState, data);
+    containerEl.innerHTML = '';
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'width:100%; height:100%; border:none; background:#ffffff; box-shadow:0 4px 16px rgba(0,0,0,0.25); border-radius:3px;';
+    containerEl.appendChild(iframe);
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(html);
+    doc.close();
+    return iframe;
   }
 
   // --------------------------------------------------------------------------

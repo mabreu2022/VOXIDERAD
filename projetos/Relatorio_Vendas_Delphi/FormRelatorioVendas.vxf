@@ -1,0 +1,308 @@
+{
+  "name": "FormRelatorioVendas",
+  "title": "Relatório Gerencial de Vendas (Delphi QuickReport HTML/PDF)",
+  "width": 760,
+  "height": 580,
+  "components": [
+    {
+      "id": "rep_vendas",
+      "name": "ReportVendas",
+      "type": "vox_Report",
+      "left": 20,
+      "top": 20,
+      "width": 720,
+      "height": 530,
+      "props": {
+        "ReportTitle": "RELATÓRIO GERENCIAL DE VENDAS",
+        "PageOrientation": "poPortrait",
+        "PageSize": "psA4",
+        "MarginLeft": 10,
+        "MarginRight": 10,
+        "MarginTop": 15,
+        "MarginBottom": 15,
+        "DataSource": "vox_DataSource1"
+      }
+    },
+    {
+      "id": "b_title",
+      "name": "TitleBand1",
+      "type": "vox_ReportBand",
+      "parent": "ReportVendas",
+      "left": 10,
+      "top": 36,
+      "width": 700,
+      "height": 50,
+      "props": {
+        "BandType": "rbTitle",
+        "Height": 50,
+        "Color": "#f8fafc",
+        "BorderBottom": true
+      }
+    },
+    {
+      "id": "lbl_title",
+      "name": "lblMainTitle",
+      "type": "vox_ReportLabel",
+      "parent": "TitleBand1",
+      "left": 15,
+      "top": 10,
+      "width": 450,
+      "height": 28,
+      "props": {
+        "Caption": "EMPRESA EXEMPLO S/A — RELATÓRIO DE VENDAS",
+        "FontSize": 13,
+        "FontBold": true,
+        "FontColor": "#0284c7"
+      }
+    },
+    {
+      "id": "b_header",
+      "name": "HeaderBand1",
+      "type": "vox_ReportBand",
+      "parent": "ReportVendas",
+      "left": 10,
+      "top": 92,
+      "width": 700,
+      "height": 32,
+      "props": {
+        "BandType": "rbPageHeader",
+        "Height": 32,
+        "Color": "#e2e8f0",
+        "BorderBottom": true
+      }
+    },
+    {
+      "id": "h_cod",
+      "name": "lblH_Cod",
+      "type": "vox_ReportLabel",
+      "parent": "HeaderBand1",
+      "left": 15,
+      "top": 6,
+      "width": 80,
+      "height": 20,
+      "props": {
+        "Caption": "CÓDIGO",
+        "FontBold": true,
+        "FontSize": 9,
+        "FontColor": "#334155"
+      }
+    },
+    {
+      "id": "h_nome",
+      "name": "lblH_Nome",
+      "type": "vox_ReportLabel",
+      "parent": "HeaderBand1",
+      "left": 105,
+      "top": 6,
+      "width": 230,
+      "height": 20,
+      "props": {
+        "Caption": "NOME DO CLIENTE",
+        "FontBold": true,
+        "FontSize": 9,
+        "FontColor": "#334155"
+      }
+    },
+    {
+      "id": "h_cid",
+      "name": "lblH_Cid",
+      "type": "vox_ReportLabel",
+      "parent": "HeaderBand1",
+      "left": 345,
+      "top": 6,
+      "width": 140,
+      "height": 20,
+      "props": {
+        "Caption": "CIDADE / UF",
+        "FontBold": true,
+        "FontSize": 9,
+        "FontColor": "#334155"
+      }
+    },
+    {
+      "id": "h_valor",
+      "name": "lblH_Valor",
+      "type": "vox_ReportLabel",
+      "parent": "HeaderBand1",
+      "left": 495,
+      "top": 6,
+      "width": 140,
+      "height": 20,
+      "props": {
+        "Caption": "SALDO ATUAL",
+        "FontBold": true,
+        "FontSize": 9,
+        "FontColor": "#334155",
+        "Alignment": "taRightJustify"
+      }
+    },
+    {
+      "id": "b_detail",
+      "name": "DetailBand1",
+      "type": "vox_ReportBand",
+      "parent": "ReportVendas",
+      "left": 10,
+      "top": 130,
+      "width": 700,
+      "height": 32,
+      "props": {
+        "BandType": "rbDetail",
+        "Height": 32,
+        "Color": "#ffffff",
+        "BorderBottom": true
+      }
+    },
+    {
+      "id": "d_cod",
+      "name": "dbCod",
+      "type": "vox_ReportDBText",
+      "parent": "DetailBand1",
+      "left": 15,
+      "top": 6,
+      "width": 80,
+      "height": 20,
+      "props": {
+        "DataField": "codigo",
+        "Alignment": "taLeftJustify"
+      }
+    },
+    {
+      "id": "d_nome",
+      "name": "dbNome",
+      "type": "vox_ReportDBText",
+      "parent": "DetailBand1",
+      "left": 105,
+      "top": 6,
+      "width": 230,
+      "height": 20,
+      "props": {
+        "DataField": "nome",
+        "Alignment": "taLeftJustify"
+      }
+    },
+    {
+      "id": "d_cid",
+      "name": "dbCid",
+      "type": "vox_ReportDBText",
+      "parent": "DetailBand1",
+      "left": 345,
+      "top": 6,
+      "width": 140,
+      "height": 20,
+      "props": {
+        "DataField": "cidade",
+        "Alignment": "taLeftJustify"
+      }
+    },
+    {
+      "id": "d_saldo",
+      "name": "dbSaldo",
+      "type": "vox_ReportDBText",
+      "parent": "DetailBand1",
+      "left": 495,
+      "top": 6,
+      "width": 140,
+      "height": 20,
+      "props": {
+        "DataField": "saldo",
+        "DisplayFormat": "Currency (R$ #,##0.00)",
+        "Alignment": "taRightJustify"
+      }
+    },
+    {
+      "id": "b_summary",
+      "name": "SummaryBand1",
+      "type": "vox_ReportBand",
+      "parent": "ReportVendas",
+      "left": 10,
+      "top": 168,
+      "width": 700,
+      "height": 40,
+      "props": {
+        "BandType": "rbSummary",
+        "Height": 40,
+        "Color": "#f1f5f9",
+        "BorderBottom": true
+      }
+    },
+    {
+      "id": "lbl_tot",
+      "name": "lblTotalGeral",
+      "type": "vox_ReportLabel",
+      "parent": "SummaryBand1",
+      "left": 320,
+      "top": 10,
+      "width": 160,
+      "height": 20,
+      "props": {
+        "Caption": "TOTAL ACUMULADO:",
+        "FontBold": true,
+        "FontColor": "#1e293b",
+        "Alignment": "taRightJustify"
+      }
+    },
+    {
+      "id": "db_tot",
+      "name": "dbTotalSaldo",
+      "type": "vox_ReportDBText",
+      "parent": "SummaryBand1",
+      "left": 495,
+      "top": 10,
+      "width": 140,
+      "height": 20,
+      "props": {
+        "DataField": "saldo",
+        "DisplayFormat": "Currency (R$ #,##0.00)",
+        "FontBold": true,
+        "FontColor": "#047857",
+        "Alignment": "taRightJustify"
+      }
+    },
+    {
+      "id": "b_footer",
+      "name": "FooterBand1",
+      "type": "vox_ReportBand",
+      "parent": "ReportVendas",
+      "left": 10,
+      "top": 214,
+      "width": 700,
+      "height": 30,
+      "props": {
+        "BandType": "rbPageFooter",
+        "Height": 30,
+        "Color": "#ffffff",
+        "BorderBottom": false
+      }
+    },
+    {
+      "id": "sys_dt",
+      "name": "sysDate",
+      "type": "vox_ReportSysData",
+      "parent": "FooterBand1",
+      "left": 15,
+      "top": 6,
+      "width": 250,
+      "height": 18,
+      "props": {
+        "SysDataType": "sdDateTime",
+        "Alignment": "taLeftJustify",
+        "FontColor": "#64748b"
+      }
+    },
+    {
+      "id": "sys_pg",
+      "name": "sysPages",
+      "type": "vox_ReportSysData",
+      "parent": "FooterBand1",
+      "left": 450,
+      "top": 6,
+      "width": 200,
+      "height": 18,
+      "props": {
+        "SysDataType": "sdPageCount",
+        "Alignment": "taRightJustify",
+        "FontColor": "#64748b"
+      }
+    }
+  ]
+}

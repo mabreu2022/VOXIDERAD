@@ -1,0 +1,228 @@
+// ==============================================================================
+// FormRelatorioVendas.vox — Unidade RAD Gerada pelo Vox Studio
+// ==============================================================================
+
+import Vox_UI, Vox_Database, Vox_SysUtils;
+
+classe FormRelatorioVendas herda TVoxForm {
+private:
+    // ── Membros e Métodos Privados ──────────────────────────────────────────
+    var _initialized: bool;
+
+    private procedure LogInterno(msg: str) {
+        println("[DEBUG INTERNO] " + msg);
+    }
+
+published:
+    // ── Propriedades e Componentes Publicados (Object Inspector) ─────────────
+    var width: int;
+    var height: int;
+    var title: str;
+    let mut ReportVendas: TVoxReport;
+    let mut TitleBand1: TVoxReportBand;
+    let mut lblMainTitle: TVoxReportLabel;
+    let mut HeaderBand1: TVoxReportBand;
+    let mut lblH_Cod: TVoxReportLabel;
+    let mut lblH_Nome: TVoxReportLabel;
+    let mut lblH_Cid: TVoxReportLabel;
+    let mut lblH_Valor: TVoxReportLabel;
+    let mut DetailBand1: TVoxReportBand;
+    let mut dbCod: TVoxReportDBText;
+    let mut dbNome: TVoxReportDBText;
+    let mut dbCid: TVoxReportDBText;
+    let mut dbSaldo: TVoxReportDBText;
+    let mut SummaryBand1: TVoxReportBand;
+    let mut lblTotalGeral: TVoxReportLabel;
+    let mut dbTotalSaldo: TVoxReportDBText;
+    let mut FooterBand1: TVoxReportBand;
+    let mut sysDate: TVoxReportSysData;
+    let mut sysPages: TVoxReportSysData;
+
+public:
+    // ── Construtor e Inicialização de Tela ────────────────────────────────────
+    new() {
+        this.title = "Relatório Gerencial de Vendas (Delphi QuickReport HTML/PDF)";
+        this.width = 760;
+        this.height = 580;
+        this._initialized = true;
+
+        this.ReportVendas = new TVoxReport();
+        this.ReportVendas.left = 20;
+        this.ReportVendas.top = 20;
+        this.ReportVendas.width = 720;
+        this.ReportVendas.height = 530;
+        this.ReportVendas.dataSource = "vox_DataSource1";
+        this.ReportVendas.reportTitle = "RELATÓRIO GERENCIAL DE VENDAS";
+        this.ReportVendas.pageOrientation = "poPortrait";
+        this.ReportVendas.pageSize = "psA4";
+
+        this.TitleBand1 = new TVoxReportBand();
+        this.TitleBand1.parent = "ReportVendas";
+        this.TitleBand1.left = 10;
+        this.TitleBand1.top = 36;
+        this.TitleBand1.width = 700;
+        this.TitleBand1.height = 50;
+        this.TitleBand1.bandType = "rbTitle";
+
+        this.lblMainTitle = new TVoxReportLabel();
+        this.lblMainTitle.parent = "TitleBand1";
+        this.lblMainTitle.left = 15;
+        this.lblMainTitle.top = 10;
+        this.lblMainTitle.width = 450;
+        this.lblMainTitle.height = 28;
+        this.lblMainTitle.caption = "EMPRESA EXEMPLO S/A — RELATÓRIO DE VENDAS";
+
+        this.HeaderBand1 = new TVoxReportBand();
+        this.HeaderBand1.parent = "ReportVendas";
+        this.HeaderBand1.left = 10;
+        this.HeaderBand1.top = 92;
+        this.HeaderBand1.width = 700;
+        this.HeaderBand1.height = 32;
+        this.HeaderBand1.bandType = "rbPageHeader";
+
+        this.lblH_Cod = new TVoxReportLabel();
+        this.lblH_Cod.parent = "HeaderBand1";
+        this.lblH_Cod.left = 15;
+        this.lblH_Cod.top = 6;
+        this.lblH_Cod.width = 80;
+        this.lblH_Cod.height = 20;
+        this.lblH_Cod.caption = "CÓDIGO";
+
+        this.lblH_Nome = new TVoxReportLabel();
+        this.lblH_Nome.parent = "HeaderBand1";
+        this.lblH_Nome.left = 105;
+        this.lblH_Nome.top = 6;
+        this.lblH_Nome.width = 230;
+        this.lblH_Nome.height = 20;
+        this.lblH_Nome.caption = "NOME DO CLIENTE";
+
+        this.lblH_Cid = new TVoxReportLabel();
+        this.lblH_Cid.parent = "HeaderBand1";
+        this.lblH_Cid.left = 345;
+        this.lblH_Cid.top = 6;
+        this.lblH_Cid.width = 140;
+        this.lblH_Cid.height = 20;
+        this.lblH_Cid.caption = "CIDADE / UF";
+
+        this.lblH_Valor = new TVoxReportLabel();
+        this.lblH_Valor.parent = "HeaderBand1";
+        this.lblH_Valor.left = 495;
+        this.lblH_Valor.top = 6;
+        this.lblH_Valor.width = 140;
+        this.lblH_Valor.height = 20;
+        this.lblH_Valor.alignment = "taRightJustify";
+        this.lblH_Valor.caption = "SALDO ATUAL";
+
+        this.DetailBand1 = new TVoxReportBand();
+        this.DetailBand1.parent = "ReportVendas";
+        this.DetailBand1.left = 10;
+        this.DetailBand1.top = 130;
+        this.DetailBand1.width = 700;
+        this.DetailBand1.height = 32;
+        this.DetailBand1.bandType = "rbDetail";
+
+        this.dbCod = new TVoxReportDBText();
+        this.dbCod.parent = "DetailBand1";
+        this.dbCod.left = 15;
+        this.dbCod.top = 6;
+        this.dbCod.width = 80;
+        this.dbCod.height = 20;
+        this.dbCod.alignment = "taLeftJustify";
+        this.dbCod.dataField = "codigo";
+
+        this.dbNome = new TVoxReportDBText();
+        this.dbNome.parent = "DetailBand1";
+        this.dbNome.left = 105;
+        this.dbNome.top = 6;
+        this.dbNome.width = 230;
+        this.dbNome.height = 20;
+        this.dbNome.alignment = "taLeftJustify";
+        this.dbNome.dataField = "nome";
+
+        this.dbCid = new TVoxReportDBText();
+        this.dbCid.parent = "DetailBand1";
+        this.dbCid.left = 345;
+        this.dbCid.top = 6;
+        this.dbCid.width = 140;
+        this.dbCid.height = 20;
+        this.dbCid.alignment = "taLeftJustify";
+        this.dbCid.dataField = "cidade";
+
+        this.dbSaldo = new TVoxReportDBText();
+        this.dbSaldo.parent = "DetailBand1";
+        this.dbSaldo.left = 495;
+        this.dbSaldo.top = 6;
+        this.dbSaldo.width = 140;
+        this.dbSaldo.height = 20;
+        this.dbSaldo.alignment = "taRightJustify";
+        this.dbSaldo.dataField = "saldo";
+        this.dbSaldo.displayFormat = "Currency (R$ #,##0.00)";
+
+        this.SummaryBand1 = new TVoxReportBand();
+        this.SummaryBand1.parent = "ReportVendas";
+        this.SummaryBand1.left = 10;
+        this.SummaryBand1.top = 168;
+        this.SummaryBand1.width = 700;
+        this.SummaryBand1.height = 40;
+        this.SummaryBand1.bandType = "rbSummary";
+
+        this.lblTotalGeral = new TVoxReportLabel();
+        this.lblTotalGeral.parent = "SummaryBand1";
+        this.lblTotalGeral.left = 320;
+        this.lblTotalGeral.top = 10;
+        this.lblTotalGeral.width = 160;
+        this.lblTotalGeral.height = 20;
+        this.lblTotalGeral.alignment = "taRightJustify";
+        this.lblTotalGeral.caption = "TOTAL ACUMULADO:";
+
+        this.dbTotalSaldo = new TVoxReportDBText();
+        this.dbTotalSaldo.parent = "SummaryBand1";
+        this.dbTotalSaldo.left = 495;
+        this.dbTotalSaldo.top = 10;
+        this.dbTotalSaldo.width = 140;
+        this.dbTotalSaldo.height = 20;
+        this.dbTotalSaldo.alignment = "taRightJustify";
+        this.dbTotalSaldo.dataField = "saldo";
+        this.dbTotalSaldo.displayFormat = "Currency (R$ #,##0.00)";
+
+        this.FooterBand1 = new TVoxReportBand();
+        this.FooterBand1.parent = "ReportVendas";
+        this.FooterBand1.left = 10;
+        this.FooterBand1.top = 214;
+        this.FooterBand1.width = 700;
+        this.FooterBand1.height = 30;
+        this.FooterBand1.bandType = "rbPageFooter";
+
+        this.sysDate = new TVoxReportSysData();
+        this.sysDate.parent = "FooterBand1";
+        this.sysDate.left = 15;
+        this.sysDate.top = 6;
+        this.sysDate.width = 250;
+        this.sysDate.height = 18;
+        this.sysDate.alignment = "taLeftJustify";
+        this.sysDate.sysDataType = "sdDateTime";
+
+        this.sysPages = new TVoxReportSysData();
+        this.sysPages.parent = "FooterBand1";
+        this.sysPages.left = 450;
+        this.sysPages.top = 6;
+        this.sysPages.width = 200;
+        this.sysPages.height = 18;
+        this.sysPages.alignment = "taRightJustify";
+        this.sysPages.sysDataType = "sdPageCount";
+
+        println("Formulário " + this.title + " inicializado no Vox Studio.");
+    }
+
+
+    // Tratador de Evento Publicado: FormRelatorioVendas -> OnCreate
+    public procedure FormCreate(sender: any) {
+        println("Formulário FormRelatorioVendas carregado com sucesso!");
+    }
+}
+
+// ── Ponto de Entrada para Execução Standalone ─────────────────────────────────
+public fn main() -> void {
+    let app = new FormRelatorioVendas();
+    println("Janela ativa: " + app.title + " [" + str(app.width) + "x" + str(app.height) + "]");
+}

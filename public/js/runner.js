@@ -29,16 +29,29 @@ class VoxFormRunner {
       sqlToExecute = queryComp.props.SQL;
     }
 
+    let connInfo = {};
+    const connComp = formState.components.find(c => c.type === 'vox_Connection' || c.type === 'TFDConnection');
+    if (connComp && connComp.props) {
+      connInfo = {
+        driver: connComp.props.DriverName || 'SQLite',
+        database: connComp.props.Database || '',
+        ip: connComp.props.IP || connComp.props.Server || '127.0.0.1',
+        porta: connComp.props.Porta || connComp.props.Port || 3050,
+        login: connComp.props.Login || connComp.props.UserName || 'SYSDBA',
+        senha: connComp.props.Senha || connComp.props.Password || 'masterkey'
+      };
+    }
+
     try {
       const res = await fetch('/api/db/query', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sql: sqlToExecute })
+        body: JSON.stringify({ sql: sqlToExecute, ...connInfo })
       });
       const data = await res.json();
       this.activeRecords = data.rows || [];
     } catch (e) {
-      console.warn('Erro ao consultar SQLite:', e);
+      console.warn('Erro ao consultar banco:', e);
       this.activeRecords = [];
     }
 
@@ -339,17 +352,18 @@ class VoxFormRunner {
       const title = comp.props.ReportTitle || comp.name;
       return `
         <div id="live_${comp.id}" class="vcl-report" style="width:100%; height:100%; background:#fbfbfb; border:1px solid #94a3b8; border-radius:4px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 2px 8px rgba(0,0,0,0.06);">
-          <div style="background:#1e293b; color:#fff; padding:6px 12px; font-size:11px; display:flex; justify-content:space-between; align-items:center;">
+          <div style="background:#1e293b; color:#fff; padding:6px 12px; font-size:11px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
             <div style="display:flex; align-items:center; gap:6px; font-weight:600;">
               <span>📑</span>
               <span>${title}</span>
               <span style="opacity:0.75; font-size:10px;">(${orient})</span>
+              <span id="live_${comp.id}_status" style="font-size:10px; color:#38bdf8; font-weight:normal;"></span>
             </div>
             <button onclick="window.voxReportEngine && window.voxReportEngine.showPreview(window.app.runner.currentFormState.components.find(c => c.name === '${comp.name}'), window.app.runner.currentFormState, window.app.runner.activeRecords)" style="background:#0284c7; color:#fff; border:none; padding:4px 10px; border-radius:3px; font-size:10px; cursor:pointer; font-weight:600; display:flex; align-items:center; gap:4px;">
               <span>👁️</span> Visualizar Relatório
             </button>
           </div>
-          <div style="flex:1; position:relative; background:#f8fafc; overflow:auto;"></div>
+          <div id="live_${comp.id}_body" style="flex:1; position:relative; background:#64748b; overflow:auto; display:flex; justify-content:center; padding:12px;"></div>
         </div>
       `;
     }
@@ -501,6 +515,16 @@ class VoxFormRunner {
 
     // 2. Disparar eventos dos componentes visuais
     formState.components.forEach(comp => {
+      if (comp.type === 'vox_Report' || comp.type === 'TVoxReport' || comp.type === 'TQuickRep') {
+        const bodyEl = document.getElementById(`live_${comp.id}_body`);
+        const statusEl = document.getElementById(`live_${comp.id}_status`);
+        if (statusEl && this.activeRecords) {
+          statusEl.textContent = `(${this.activeRecords.length} registros)`;
+        }
+        if (bodyEl && window.voxReportEngine) {
+          window.voxReportEngine.renderInto(bodyEl, comp, formState, this.activeRecords);
+        }
+      }
       // Menu Principal (vox_MainMenu / TVoxMainMenu)
       if (['vox_MainMenu', 'TMainMenu', 'TVoxMainMenu', 'vox_PopupMenu', 'TPopupMenu', 'TVoxPopupMenu'].includes(comp.type)) {
         const rawItems = (comp.props && comp.props.Items !== undefined) ? comp.props.Items : 'Cadastros, Vendas, Relatórios, Configurações';
