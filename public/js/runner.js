@@ -551,6 +551,28 @@ class VoxFormRunner {
                     return;
                   }
                 }
+                if (window.voxERPEngine) {
+                  const normItem = item.toLowerCase();
+                  if (normItem.includes('fiscal') || normItem.includes('nf-e') || normItem.includes('nfc-e')) {
+                    window.voxERPEngine.switchModule('fiscal', this.modalBody);
+                    return;
+                  } else if (normItem.includes('estoque')) {
+                    window.voxERPEngine.switchModule('estoque', this.modalBody);
+                    return;
+                  } else if (normItem.includes('pdv') || normItem.includes('caixa')) {
+                    window.voxERPEngine.switchModule('pdv', this.modalBody);
+                    return;
+                  } else if (normItem.includes('financeiro')) {
+                    window.voxERPEngine.switchModule('financeiro', this.modalBody);
+                    return;
+                  } else if (normItem.includes('configura')) {
+                    window.voxERPEngine.switchModule('configuracoes', this.modalBody);
+                    return;
+                  } else if (normItem.includes('cadastro')) {
+                    window.voxERPEngine.switchModule('cadastros', this.modalBody);
+                    return;
+                  }
+                }
                 alert(`[Evento VCL MainMenu]\n${comp.name}.${handlerName}() acionado para a opção: "${item}".`);
               });
             }
@@ -576,7 +598,26 @@ class VoxFormRunner {
           }
         }
 
-        alert(`[Evento VCL]\n${comp.name}.${handlerName}() acionado com sucesso.`);
+        if (window.voxERPEngine) {
+          const btnCaption = (comp.props && comp.props.Caption) || '';
+          if (comp.name === 'vox_Button1' || btnCaption.includes('Emitir') || btnCaption.includes('Transmitir')) {
+            window.voxERPEngine.emitirNFe();
+            return;
+          } else if (comp.name === 'vox_Button2' || btnCaption.includes('Carrinho')) {
+            window.voxERPEngine.adicionarItemPDV();
+            return;
+          } else if (comp.name === 'vox_Button3' || btnCaption.includes('PIX')) {
+            window.voxERPEngine.abrirModalPIX();
+            return;
+          } else if (comp.name === 'vox_Button4' || btnCaption.includes('Dinheiro') || btnCaption.includes('Troco')) {
+            window.voxERPEngine.abrirModalDinheiro();
+            return;
+          } else if (comp.name === 'vox_Button5' || btnCaption.includes('Finalizar') || btnCaption.includes('Cupom')) {
+            window.voxERPEngine.finalizarVendaNFCe();
+            return;
+          }
+        }
+        alert(`[Evento VCL OnClick]\n${comp.name}.${handlerName}() acionado com sucesso.`);
       });
     });
   }

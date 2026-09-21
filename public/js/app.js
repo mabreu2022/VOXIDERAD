@@ -1653,21 +1653,13 @@ class VoxStudioApp {
   // --------------------------------------------------------------------------
   selectAll() {
     if (this.currentView === 'code') {
-      this.editor.textarea.focus();
-      this.editor.textarea.select();
-    } else {
-      if (this.designer && this.designer.form.components.length > 0) {
-        this.designer.selectComponent(this.designer.form.components[0]);
+      if (this.editor && this.editor.textarea) {
+        this.editor.textarea.focus();
+        this.editor.textarea.select();
       }
+    } else if (this.designer) {
+      this.designer.selectAllComponents();
     }
-  }
-
-  showProjectOptions() {
-    alert(`[Opções do Projeto Vox RAD]\n\n• Projeto: Project1\n• Plataforma Alvo: Aplicação Web Standalone (Navegador)\n• Servidor Web: Node.js HTTP/REST na Porta 5000\n• Banco de Dados: SQLite3 (app.db)\n• Linguagem: Vox Language Compiler & Runtime\n• Nomenclatura: vox_* Standard`);
-  }
-
-  showAbout() {
-    alert(`[Vox Studio RAD — Web Edition]\n\nAmbiente de Desenvolvimento Rápido de Aplicações para a Linguagem Vox.\n\n• Padrão de Componentes: vox_* (vox_Connection, vox_DataSource, vox_Query, vox_Button, etc.)\n• Designer Visual com Redimensionamento e Esticamento ao Vivo\n• Eventos Oficiais do Form Delphi (OnCreate, OnShow, OnClose, etc.)\n• Editor com Busca (Ctrl+F) e Refatoração de Código\n• Fábrica de Componentes Extensível\n• Compilação Web Standalone com Janela Delphi e Botão Fechar [✕]`);
   }
 
   // --------------------------------------------------------------------------
@@ -2227,17 +2219,21 @@ class ${baseName} {
 
   editUndo() {
     if (this.currentView === 'code') {
-      document.execCommand('undo');
-    } else {
-      this.showToast('↩️ Desfazer (Undo)');
+      if (this.editor && this.editor.textarea) {
+        document.execCommand('undo');
+      }
+    } else if (this.designer) {
+      this.designer.undo();
     }
   }
 
   editRedo() {
     if (this.currentView === 'code') {
-      document.execCommand('redo');
-    } else {
-      this.showToast('↪️ Refazer (Redo)');
+      if (this.editor && this.editor.textarea) {
+        document.execCommand('redo');
+      }
+    } else if (this.designer) {
+      this.designer.redo();
     }
   }
 

@@ -1156,6 +1156,10 @@ const server = http.createServer(async (req, res) => {
       fs.writeFileSync(path.join(DIST_WEB_DIR, 'index.html'), htmlContent || '', 'utf-8');
       fs.writeFileSync(path.join(DIST_WEB_DIR, 'css', 'app.css'), cssContent || '', 'utf-8');
       fs.writeFileSync(path.join(DIST_WEB_DIR, 'js', 'app.js'), jsContent || '', 'utf-8');
+      const erpEngineSrc = path.join(PUBLIC_DIR, 'js', 'erp_engine.js');
+      if (fs.existsSync(erpEngineSrc)) {
+        fs.copyFileSync(erpEngineSrc, path.join(DIST_WEB_DIR, 'js', 'erp_engine.js'));
+      }
       fs.writeFileSync(path.join(DIST_WEB_DIR, 'server.js'), serverContent || '', 'utf-8');
       fs.writeFileSync(path.join(DIST_WEB_DIR, `${formName}.vox`), voxContent || '', 'utf-8');
 

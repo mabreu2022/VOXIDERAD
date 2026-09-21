@@ -1075,6 +1075,7 @@ public fn main() -> void {
     <span>Backend Vox & SQLite</span>
   </footer>
 
+  <script src="js/erp_engine.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>`;
@@ -1830,6 +1831,28 @@ class WebAppController {
       this[handlerName](item, idx);
       return;
     }
+    if (window.voxERPEngine) {
+      const norm = (item || '').toLowerCase();
+      if (norm.includes('fiscal') || norm.includes('nf-e') || norm.includes('nfc-e')) {
+        window.voxERPEngine.switchModule('fiscal');
+        return;
+      } else if (norm.includes('estoque')) {
+        window.voxERPEngine.switchModule('estoque');
+        return;
+      } else if (norm.includes('pdv') || norm.includes('caixa')) {
+        window.voxERPEngine.switchModule('pdv');
+        return;
+      } else if (norm.includes('financeiro')) {
+        window.voxERPEngine.switchModule('financeiro');
+        return;
+      } else if (norm.includes('configura')) {
+        window.voxERPEngine.switchModule('configuracoes');
+        return;
+      } else if (norm.includes('cadastro')) {
+        window.voxERPEngine.switchModule('cadastros');
+        return;
+      }
+    }
     alert('Menu [' + item + '] acionado com sucesso!');
   }
 
@@ -1993,13 +2016,31 @@ class WebAppController {
   }
 
   handleClick(btnName) {
+    if (window.voxERPEngine) {
+      if (btnName === 'vox_Button1' || btnName === 'Button1') {
+        window.voxERPEngine.emitirNFe();
+        return;
+      } else if (btnName === 'vox_Button2' || btnName === 'Button2') {
+        window.voxERPEngine.adicionarItemPDV();
+        return;
+      } else if (btnName === 'vox_Button3' || btnName === 'Button3') {
+        window.voxERPEngine.abrirModalPIX();
+        return;
+      } else if (btnName === 'vox_Button4' || btnName === 'Button4') {
+        window.voxERPEngine.abrirModalDinheiro();
+        return;
+      } else if (btnName === 'vox_Button5' || btnName === 'Button5') {
+        window.voxERPEngine.finalizarVendaNFCe();
+        return;
+      }
+    }
+
     if (btnName === 'Button1' || btnName === 'vox_Button1' || btnName === 'btnSalvar') {
       this.navSave();
     } else {
-      alert(\`Botão \${btnName} clicado!\`);
+      alert('Botao ' + btnName + ' acionado com sucesso.');
     }
   }
-
 
   // --------------------------------------------------------------------------
   // Métodos do Motor de Relatórios Delphi QuickReport para Web

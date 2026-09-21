@@ -4424,3 +4424,26 @@ body.theme-dark .dsd-btn-cancel {
 }
 
 
+
+/* ==============================================================================
+   Seleção Múltipla Estilo Delphi e Retângulo de Seleção (Marquee)
+   ============================================================================== */
+.delphi-selection-marquee {
+  position: absolute;
+  border: 1px dashed #38bdf8;
+  background: rgba(56, 189, 248, 0.16);
+  pointer-events: none;
+  z-index: 10000;
+  border-radius: 2px;
+}
+
+.delphi-comp.multi-selected {
+  outline: 1.5px dashed #38bdf8 !important;
+  outline-offset: 1px;
+}
+
+.delphi-comp.selected {
+  outline: 1.5px solid #0078d4 !important;
+  outline-offset: 1px;
+  z-index: 900;
+}

@@ -554,6 +554,9 @@ class VoxObjectInspector {
   }
 
   onPropChange(type, key, value) {
+    if (window.app && window.app.designer && typeof window.app.designer.saveSnapshot === 'function') {
+      window.app.designer.saveSnapshot(`Alterar ${key}`);
+    }
     if (type === 'parent') {
       if (this.target && window.app && window.app.designer) {
         window.app.designer.reparentComponent(this.target, value);

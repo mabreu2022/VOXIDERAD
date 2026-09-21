@@ -14,7 +14,18 @@ class VoxDesigner {
       components: []
     };
 
-    this.selectedComponent = null;
+    this.selectedComponents = [];
+    this.undoStack = [];
+    this.redoStack = [];
+    this.maxHistory = 50;
+
+    this.isMarquee = false;
+    this.marqueeStart = { x: 0, y: 0, canvasX: 0, canvasY: 0 };
+    this.marqueeEl = null;
+    this.marqueePreSelected = [];
+    this.multiCompStarts = new Map();
+    this._moveSnapshotTaken = false;
+
     this.gridSnap = 8;
     this.isSnapping = true;
     this.idCounter = 1;
@@ -30,6 +41,226 @@ class VoxDesigner {
 
     this.initEvents();
     this.renderForm();
+  }
+
+
+  get selectedComponent() {
+    return (this.selectedComponents && this.selectedComponents.length > 0)
+      ? this.selectedComponents[this.selectedComponents.length - 1]
+      : null;
+  }
+  set selectedComponent(comp) {
+    if (!comp) {
+      this.selectedComponents = [];
+    } else {
+      this.selectedComponents = [comp];
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // Motor de Histórico Delphi VCL: Desfazer (Ctrl+Z) e Refazer (Ctrl+Y)
+  // --------------------------------------------------------------------------
+  saveSnapshot(actionName = 'Alteração') {
+    if (!this.form || !this.form.components) return;
+    const snapshot = {
+      name: actionName,
+      form: JSON.parse(JSON.stringify(this.form)),
+      selectedIds: (this.selectedComponents || []).map(c => c.id)
+    };
+    this.undoStack.push(snapshot);
+    if (this.undoStack.length > this.maxHistory) {
+      this.undoStack.shift();
+    }
+    this.redoStack = [];
+  }
+
+  undo() {
+    if (!this.undoStack || this.undoStack.length === 0) {
+      if (window.app) window.app.showToast('ℹ️ Nada para desfazer (Ctrl+Z).');
+      return;
+    }
+
+    const currentSnapshot = {
+      name: 'Estado Atual',
+      form: JSON.parse(JSON.stringify(this.form)),
+      selectedIds: (this.selectedComponents || []).map(c => c.id)
+    };
+    this.redoStack.push(currentSnapshot);
+
+    const prev = this.undoStack.pop();
+    this.form = JSON.parse(JSON.stringify(prev.form));
+    this.renderForm();
+
+    if (prev.selectedIds && prev.selectedIds.length > 0) {
+      const restored = this.form.components.filter(c => prev.selectedIds.includes(c.id));
+      this.setMultiSelection(restored);
+    } else {
+      this.selectComponent(null);
+    }
+
+    if (window.app) {
+      window.app.onFormChanged();
+      window.app.updateStructureTree();
+      if (window.app.inspector) window.app.inspector.update(this.selectedComponent);
+      window.app.showToast(`↩️ Desfeito: ${prev.name || 'Ação anterior'}`);
+    }
+  }
+
+  redo() {
+    if (!this.redoStack || this.redoStack.length === 0) {
+      if (window.app) window.app.showToast('ℹ️ Nada para refazer (Ctrl+Y).');
+      return;
+    }
+
+    const currentSnapshot = {
+      name: 'Estado Anterior',
+      form: JSON.parse(JSON.stringify(this.form)),
+      selectedIds: (this.selectedComponents || []).map(c => c.id)
+    };
+    this.undoStack.push(currentSnapshot);
+
+    const next = this.redoStack.pop();
+    this.form = JSON.parse(JSON.stringify(next.form));
+    this.renderForm();
+
+    if (next.selectedIds && next.selectedIds.length > 0) {
+      const restored = this.form.components.filter(c => next.selectedIds.includes(c.id));
+      this.setMultiSelection(restored);
+    } else {
+      this.selectComponent(null);
+    }
+
+    if (window.app) {
+      window.app.onFormChanged();
+      window.app.updateStructureTree();
+      if (window.app.inspector) window.app.inspector.update(this.selectedComponent);
+      window.app.showToast(`↪️ Refeito: ${next.name || 'Ação seguinte'}`);
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // Seleção Múltipla Delphi (Shift+Click, Ctrl+Click e Rubberband Marquee)
+  // --------------------------------------------------------------------------
+  clearSelection() {
+    this.setMultiSelection([]);
+    if (window.app) {
+      if (window.app.inspector) window.app.inspector.update(null);
+      window.app.updateStructureTree();
+    }
+  }
+
+  setMultiSelection(compList) {
+    this.selectedComponents = compList || [];
+    this.canvas.querySelectorAll('.delphi-comp').forEach(el => {
+      const isSel = this.selectedComponents.some(c => c.id === el.id);
+      el.classList.toggle('selected', isSel);
+      el.classList.toggle('multi-selected', isSel && this.selectedComponents.length > 1);
+    });
+  }
+
+  toggleComponentSelection(comp) {
+    if (!comp) return;
+    const idx = this.selectedComponents.findIndex(c => c.id === comp.id);
+    if (idx !== -1) {
+      this.selectedComponents.splice(idx, 1);
+    } else {
+      this.selectedComponents.push(comp);
+    }
+    this.setMultiSelection(this.selectedComponents);
+    if (window.app) {
+      if (window.app.inspector) window.app.inspector.update(this.selectedComponent);
+      window.app.updateStructureTree();
+    }
+  }
+
+  selectAllComponents() {
+    this.selectedComponents = [...(this.form.components || [])];
+    this.setMultiSelection(this.selectedComponents);
+    if (window.app) {
+      if (window.app.inspector) window.app.inspector.update(this.selectedComponent);
+      window.app.updateStructureTree();
+      window.app.showToast(`✓ Todos os ${this.selectedComponents.length} componentes selecionados.`);
+    }
+  }
+
+  startMarquee(e) {
+    this.isMarquee = true;
+    const canvasRect = this.canvas.getBoundingClientRect();
+    this.marqueeStart = {
+      x: e.clientX,
+      y: e.clientY,
+      canvasX: e.clientX - canvasRect.left + this.canvas.scrollLeft,
+      canvasY: e.clientY - canvasRect.top + this.canvas.scrollTop
+    };
+
+    if (!this.marqueeEl) {
+      this.marqueeEl = document.createElement('div');
+      this.marqueeEl.className = 'delphi-selection-marquee';
+      this.canvas.appendChild(this.marqueeEl);
+    }
+    this.marqueeEl.style.left = `${this.marqueeStart.canvasX}px`;
+    this.marqueeEl.style.top = `${this.marqueeStart.canvasY}px`;
+    this.marqueeEl.style.width = '0px';
+    this.marqueeEl.style.height = '0px';
+    this.marqueeEl.style.display = 'block';
+
+    this.marqueePreSelected = (e.shiftKey || e.ctrlKey) ? [...this.selectedComponents] : [];
+  }
+
+  updateMarquee(e) {
+    if (!this.isMarquee || !this.marqueeEl) return;
+
+    const canvasRect = this.canvas.getBoundingClientRect();
+    const curCanvasX = e.clientX - canvasRect.left + this.canvas.scrollLeft;
+    const curCanvasY = e.clientY - canvasRect.top + this.canvas.scrollTop;
+
+    const left = Math.min(this.marqueeStart.canvasX, curCanvasX);
+    const top = Math.min(this.marqueeStart.canvasY, curCanvasY);
+    const width = Math.abs(curCanvasX - this.marqueeStart.canvasX);
+    const height = Math.abs(curCanvasY - this.marqueeStart.canvasY);
+
+    this.marqueeEl.style.left = `${left}px`;
+    this.marqueeEl.style.top = `${top}px`;
+    this.marqueeEl.style.width = `${width}px`;
+    this.marqueeEl.style.height = `${height}px`;
+
+    const mRect = {
+      left: Math.min(this.marqueeStart.x, e.clientX),
+      top: Math.min(this.marqueeStart.y, e.clientY),
+      right: Math.max(this.marqueeStart.x, e.clientX),
+      bottom: Math.max(this.marqueeStart.y, e.clientY)
+    };
+
+    const newSel = [...this.marqueePreSelected];
+    this.form.components.forEach(c => {
+      const el = document.getElementById(c.id);
+      if (el) {
+        const cRect = el.getBoundingClientRect();
+        const intersects = !(
+          cRect.right < mRect.left ||
+          cRect.left > mRect.right ||
+          cRect.bottom < mRect.top ||
+          cRect.top > mRect.bottom
+        );
+        if (intersects && !newSel.some(s => s.id === c.id)) {
+          newSel.push(c);
+        }
+      }
+    });
+
+    this.setMultiSelection(newSel);
+  }
+
+  endMarquee() {
+    if (!this.isMarquee) return;
+    this.isMarquee = false;
+    if (this.marqueeEl) {
+      this.marqueeEl.style.display = 'none';
+    }
+    if (window.app && window.app.inspector) {
+      window.app.inspector.update(this.selectedComponent);
+      window.app.updateStructureTree();
+    }
   }
 
   snap(val) {
@@ -62,7 +293,6 @@ class VoxDesigner {
 
   initEvents() {
     this.canvas.addEventListener('mousedown', (e) => {
-      // Se clicou em uma aba ou no botão de adicionar aba (+), não iniciar arrasto do PageControl
       if (e.target.closest('.vcl-tab-add-btn') || e.target.closest('.vcl-tab-item')) {
         return;
       }
@@ -71,10 +301,20 @@ class VoxDesigner {
       if (compEl) {
         const comp = this.form.components.find(c => c.id === compEl.id);
         if (comp) {
-          this.selectComponent(comp);
+          const isMulti = e.shiftKey || e.ctrlKey;
+          if (isMulti) {
+            this.toggleComponentSelection(comp);
+          } else {
+            if (!this.selectedComponents.some(c => c.id === comp.id)) {
+              this.selectComponent(comp, false);
+            }
+          }
         }
-      } else if (e.target === this.canvas) {
-        this.selectComponent(null);
+      } else {
+        if (!e.shiftKey && !e.ctrlKey) {
+          this.selectComponent(null);
+        }
+        this.startMarquee(e);
       }
     });
 
@@ -249,6 +489,11 @@ class VoxDesigner {
     });
 
     window.addEventListener('mouseup', () => {
+      if (this.isMarquee) {
+        this.endMarquee();
+      }
+      this._moveSnapshotTaken = false;
+
       if (this.dragMode) {
         const wasFormResize = (this.dragMode === 'form-resize');
         const wasFormMove = (this.dragMode === 'form-move');
@@ -271,15 +516,44 @@ class VoxDesigner {
       }
     });
 
-    window.addEventListener('keydown', (e) => {
+        window.addEventListener('keydown', (e) => this.handleKeyDown(e));
+  }
+
+  handleKeyDown(e) {
+
       if (e.key === 'Escape') {
         this.hideContextMenu();
+        if (this.isMarquee) this.endMarquee();
       }
 
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
       if (document.activeElement.closest && document.activeElement.closest('.CodeMirror')) return;
 
-      // Colar (Ctrl+V) funciona mesmo se nenhum componente estiver selecionado (cola no Form)
+      // Desfazer (Ctrl+Z)
+      if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'z') {
+        if (window.app && window.app.currentView !== 'designer') return;
+        e.preventDefault();
+        this.undo();
+        return;
+      }
+
+      // Refazer (Ctrl+Y ou Ctrl+Shift+Z)
+      if ((e.ctrlKey && !e.altKey && e.key.toLowerCase() === 'y') || (e.ctrlKey && e.shiftKey && !e.altKey && e.key.toLowerCase() === 'z')) {
+        if (window.app && window.app.currentView !== 'designer') return;
+        e.preventDefault();
+        this.redo();
+        return;
+      }
+
+      // Selecionar Tudo (Ctrl+A)
+      if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'a') {
+        if (window.app && window.app.currentView !== 'designer') return;
+        e.preventDefault();
+        this.selectAllComponents();
+        return;
+      }
+
+      // Colar (Ctrl+V)
       if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'v') {
         if (window.app && window.app.currentView !== 'designer') return;
         e.preventDefault();
@@ -287,8 +561,9 @@ class VoxDesigner {
         return;
       }
 
-      if (!this.selectedComponent) return;
+      if (!this.selectedComponents || this.selectedComponents.length === 0) return;
 
+      // Copiar (Ctrl+C)
       if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'c') {
         if (window.app && window.app.currentView !== 'designer') return;
         e.preventDefault();
@@ -296,6 +571,7 @@ class VoxDesigner {
         return;
       }
 
+      // Recortar (Ctrl+X)
       if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'x') {
         if (window.app && window.app.currentView !== 'designer') return;
         e.preventDefault();
@@ -303,6 +579,7 @@ class VoxDesigner {
         return;
       }
 
+      // Duplicar (Ctrl+D)
       if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'd') {
         if (window.app && window.app.currentView !== 'designer') return;
         e.preventDefault();
@@ -310,34 +587,41 @@ class VoxDesigner {
         return;
       }
 
+      // Excluir (Del / Backspace)
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        this.deleteSelected();
+        return;
+      }
+
+      // Mover com Setas do Teclado (Multi-Componentes)
       const step = e.shiftKey ? 8 : 1;
       let moved = false;
 
-      if (e.key === 'Delete' || e.key === 'Backspace') {
-        this.deleteSelected();
-        e.preventDefault();
-        return;
-      } else if (e.key === 'ArrowLeft') {
-        this.selectedComponent.left = Math.max(0, this.selectedComponent.left - step);
-        moved = true;
-      } else if (e.key === 'ArrowRight') {
-        this.selectedComponent.left += step;
-        moved = true;
-      } else if (e.key === 'ArrowUp') {
-        this.selectedComponent.top = Math.max(0, this.selectedComponent.top - step);
-        moved = true;
-      } else if (e.key === 'ArrowDown') {
-        this.selectedComponent.top += step;
-        moved = true;
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+        this.saveSnapshot('Mover com teclado');
+        this.selectedComponents.forEach(c => {
+          const align = (c.props && c.props.Align) || 'alNone';
+          if (align === 'alNone') {
+            if (e.key === 'ArrowLeft') c.left = Math.max(0, c.left - step);
+            if (e.key === 'ArrowRight') c.left += step;
+            if (e.key === 'ArrowUp') c.top = Math.max(0, c.top - step);
+            if (e.key === 'ArrowDown') c.top += step;
+            if (c.props) {
+              c.props.Left = c.left;
+              c.props.Top = c.top;
+            }
+            this.updateComponentElement(c);
+            moved = true;
+          }
+        });
       }
 
       if (moved) {
         e.preventDefault();
-        this.updateComponentElement(this.selectedComponent);
         if (window.app && window.app.inspector) window.app.inspector.update(this.selectedComponent);
       }
-    });
-  }
+      }
 
   isContainerComponent(type) {
     if (!type) return false;
@@ -477,6 +761,7 @@ class VoxDesigner {
   }
 
   addComponent(type, left, top, parentName = null) {
+    this.saveSnapshot(`Adicionar ${type}`);
     const meta = window.VOX_COMPONENTS[type];
     if (!meta) return null;
 
@@ -578,10 +863,15 @@ class VoxDesigner {
     return newComp;
   }
 
-  deleteSelected() {
-    if (!this.selectedComponent) return;
+  deleteSelectedComponents() {
+    return this.deleteSelected();
+  }
 
-    // Coletar todos os filhos e descendentes para exclusão em cascata Delphi
+  deleteSelected() {
+    if (!this.selectedComponents || this.selectedComponents.length === 0) return;
+
+    this.saveSnapshot('Excluir Componente(s)');
+
     const idsToDelete = new Set();
     const collectDescendants = (compName) => {
       const children = this.form.components.filter(c => c.parent === compName);
@@ -591,8 +881,10 @@ class VoxDesigner {
       });
     };
 
-    idsToDelete.add(this.selectedComponent.id);
-    collectDescendants(this.selectedComponent.name);
+    this.selectedComponents.forEach(comp => {
+      idsToDelete.add(comp.id);
+      collectDescendants(comp.name);
+    });
 
     idsToDelete.forEach(id => {
       const el = document.getElementById(id);
@@ -601,7 +893,7 @@ class VoxDesigner {
 
     this.form.components = this.form.components.filter(c => !idsToDelete.has(c.id));
     this.recalculateAlignments(false);
-    this.selectComponent(null);
+    this.clearSelection();
 
     if (window.app) {
       window.app.onFormChanged();
@@ -660,6 +952,7 @@ class VoxDesigner {
   }
 
   pasteComponent() {
+    this.saveSnapshot('Colar componentes');
     const clip = this.clipboard || window.voxClipboard;
     if (!clip || !clip.root) {
       if (window.app) window.app.showToast('⚠️ Área de transferência vazia. Copie um componente primeiro (Ctrl+C).');
@@ -1058,28 +1351,37 @@ class VoxDesigner {
     return newBand;
   }
 
-  selectComponent(comp) {
-    this.canvas.querySelectorAll('.delphi-comp').forEach(el => el.classList.remove('selected'));
+  selectComponent(comp, isMulti = false) {
+    if (!comp) {
+      this.selectedComponents = [];
+      this.setMultiSelection([]);
+      if (window.app) {
+        if (window.app.inspector) window.app.inspector.update(null);
+        window.app.updateStructureTree();
+      }
+      return;
+    }
 
-    this.selectedComponent = comp;
-    if (comp) {
-      // Se for uma TabSheet, sincronizar a aba ativa do PageControl pai
-      if (this.isTabSheetComponent(comp.type) && comp.parent) {
-        const pc = this.getComponentByName(comp.parent);
-        if (pc) {
-          const pages = this.form.components.filter(c =>
-            this.isTabSheetComponent(c.type) && c.parent === pc.name
-          );
-          const tabIdx = pages.findIndex(p => p.id === comp.id);
-          if (tabIdx !== -1 && pc.props.ActivePageIndex !== tabIdx) {
-            pc.props.ActivePageIndex = tabIdx;
-            this.renderForm();
-          }
+    if (isMulti) {
+      this.toggleComponentSelection(comp);
+      return;
+    }
+
+    this.selectedComponents = [comp];
+    this.setMultiSelection(this.selectedComponents);
+
+    if (this.isTabSheetComponent(comp.type) && comp.parent) {
+      const pc = this.getComponentByName(comp.parent);
+      if (pc) {
+        const pages = this.form.components.filter(c =>
+          this.isTabSheetComponent(c.type) && c.parent === pc.name
+        );
+        const tabIdx = pages.findIndex(p => p.id === comp.id);
+        if (tabIdx !== -1 && pc.props.ActivePageIndex !== tabIdx) {
+          pc.props.ActivePageIndex = tabIdx;
+          this.renderForm();
         }
       }
-
-      const el = document.getElementById(comp.id);
-      if (el) el.classList.add('selected');
     }
 
     if (window.app) {
@@ -1418,19 +1720,24 @@ class VoxDesigner {
     });
 
     div.addEventListener('mousedown', (e) => {
-      // Se clicou em uma aba ou no botão de adicionar aba (+), não iniciar arrasto do PageControl
       if (e.target.closest('.vcl-tab-add-btn') || e.target.closest('.vcl-tab-item')) {
         return;
       }
 
       e.stopPropagation();
 
-      if (e.button === 2) {
-        this.selectComponent(comp);
-        return;
+      const isMulti = e.shiftKey || e.ctrlKey;
+      if (isMulti) {
+        this.toggleComponentSelection(comp);
+      } else {
+        if (!this.selectedComponents.some(c => c.id === comp.id)) {
+          this.selectComponent(comp, false);
+        }
       }
 
-      this.selectComponent(comp);
+      if (e.button === 2) {
+        return;
+      }
 
       if (e.target.classList.contains('delphi-handle')) {
         this.dragMode = 'resize';
@@ -1441,6 +1748,12 @@ class VoxDesigner {
 
       this.dragStart = { x: e.clientX, y: e.clientY };
       this.compStart = { left: comp.left, top: comp.top, width: comp.width, height: comp.height };
+
+      this.multiCompStarts = new Map();
+      this.selectedComponents.forEach(c => {
+        this.multiCompStarts.set(c.id, { left: c.left, top: c.top, width: c.width, height: c.height });
+      });
+      this._moveSnapshotTaken = false;
     });
 
     // Duplo clique -> jump to OnClick
@@ -1564,15 +1877,27 @@ class VoxDesigner {
     const comp = this.selectedComponent;
     const align = (comp.props && comp.props.Align) || 'alNone';
 
+    if (this.isMarquee) {
+      this.updateMarquee(e);
+      return;
+    }
+
     if (this.dragMode === 'move') {
-      if (align !== 'alNone') {
-        // Componentes alinhados (alTop, alBottom, alLeft, alRight, alClient)
-        // não podem ser movidos livremente com o mouse (Regra Delphi VCL)
-        return;
+      if (!this._moveSnapshotTaken && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) {
+        this.saveSnapshot('Mover componentes');
+        this._moveSnapshotTaken = true;
       }
-      comp.left = Math.max(0, this.snap(this.compStart.left + dx));
-      comp.top = Math.max(0, this.snap(this.compStart.top + dy));
-      this.updateComponentElement(comp);
+      this.selectedComponents.forEach(c => {
+        const orig = this.multiCompStarts.get(c.id);
+        if (orig) {
+          const al = (c.props && c.props.Align) || 'alNone';
+          if (al === 'alNone') {
+            c.left = Math.max(0, this.snap(orig.left + dx));
+            c.top = Math.max(0, this.snap(orig.top + dy));
+            this.updateComponentElement(c);
+          }
+        }
+      });
     } else if (this.dragMode === 'resize') {
       const h = this.resizeHandle;
 
