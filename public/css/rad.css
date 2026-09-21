@@ -4447,3 +4447,18 @@ body.theme-dark .dsd-btn-cancel {
   outline-offset: 1px;
   z-index: 900;
 }
+
+/* Modal Maximizado do Live Runner (F9) */
+.modal-content.modal-maximized {
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+}
+.modal-content.modal-maximized .modal-body {
+  flex: 1;
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+}

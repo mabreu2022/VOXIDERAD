@@ -740,6 +740,24 @@ class VoxFormRunner {
   close() {
     if (this.modal) this.modal.style.display = 'none';
   }
+
+  toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+    } else {
+      if (document.exitFullscreen) document.exitFullscreen();
+    }
+  }
+
+  toggleMaximize() {
+    if (!this.modal) return;
+    const content = this.modal.querySelector('.modal-content');
+    if (content) {
+      content.classList.toggle('modal-maximized');
+    }
+  }
 }
 
 window.VoxFormRunner = VoxFormRunner;

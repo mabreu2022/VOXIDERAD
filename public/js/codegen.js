@@ -1037,8 +1037,11 @@ public fn main() -> void {
       <span class="title">${formTitle}</span>
       <span class="badge">Web System</span>
     </div>
-    <div class="header-status">
-      <span id="connStatus" class="status-online">● Conectado ao Banco</span>
+    <div class="header-status" style="display:flex; align-items:center; gap:8px;">
+      <button class="web-btn header-action-btn" onclick="app.toggleBrowserFullscreen()" id="btnHeaderFullscreen" title="Alternar Tela Cheia (F11 / Alt+Enter)">⛶ Tela Cheia</button>
+      <button class="web-btn header-action-btn" onclick="app.toggleFitToScreen()" id="btnHeaderFit" title="Ajustar Automaticamente à Tela">🔍 Ajustar à Tela</button>
+      <button class="web-btn header-action-btn" onclick="app.toggleMaximize()" id="btnHeaderMaximize" title="Maximizar / Restaurar Formulário">🗖 Maximizar</button>
+      <span id="connStatus" class="status-online" style="margin-left:8px;">● Conectado ao Banco</span>
     </div>
   </header>
 
@@ -1051,7 +1054,9 @@ public fn main() -> void {
           <span id="webFormTitleText">${formTitle}</span>
         </div>
         <div class="web-form-sysbuttons">
-          <button class="sys-btn" onclick="app.toggleMaximize()" id="btnToggleMaximize" title="Alternar Preencher Navegador / Janela Flutuante">🗖</button>
+          <button class="sys-btn" onclick="app.toggleFitToScreen()" id="btnTitlebarFit" title="Ajustar Proporcional à Tela">🔍</button>
+          <button class="sys-btn" onclick="app.toggleBrowserFullscreen()" id="btnTitlebarFullscreen" title="Tela Cheia do Navegador (F11)">⛶</button>
+          <button class="sys-btn" onclick="app.toggleMaximize()" id="btnToggleMaximize" title="Maximizar / Restaurar Formulário">🗖</button>
           <button class="sys-btn close-btn" onclick="app.closeForm()" title="Fechar Formulário">✕</button>
         </div>
       </div>
@@ -1142,15 +1147,80 @@ body {
 .app-workspace {
   flex: 1;
   display: flex;
+  flex-direction: column;
   width: 100%;
   height: calc(100vh - 50px - 28px);
+  min-height: 0;
   padding: 0;
   margin: 0;
   overflow: hidden;
+  position: relative;
+  background: var(--bg-body, #1e2430);
+}
+
+:fullscreen .app-workspace,
+:-webkit-full-screen .app-workspace {
+  height: 100vh !important;
+}
+
+:fullscreen .app-footer,
+:-webkit-full-screen .app-footer {
+  display: none !important;
+}
+
+.header-action-btn {
+  padding: 5px 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  background: #252e3d;
+  border: 1px solid #3b475d;
+  color: #f1f5f9;
+  transition: all 0.15s ease;
+}
+
+.header-action-btn:hover {
+  background: #0078d4;
+  border-color: #38bdf8;
+  color: #ffffff;
 }
 
 .web-form-window {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
   background: var(--form-bg, #f0f0f0);
+  overflow: hidden;
+  box-sizing: border-box;
+  transition: all 0.2s ease-in-out;
+}
+
+.web-form-window.fullscreen-mode {
+  flex: 1;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.web-form-window.windowed-mode {
+  flex: none;
+  width: min(96vw, ${width}px) !important;
+  height: min(92vh, ${height + 34}px) !important;
+  margin: auto !important;
+  border-radius: 8px !important;
+  border: 1px solid #475569 !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
 }
 
 .web-form-titlebar {
@@ -1158,12 +1228,14 @@ body {
   border-bottom: 1px solid #cbd5e1;
   color: #0f172a;
   height: 32px;
+  min-height: 32px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 12px;
   font-weight: 600;
   font-size: 12px;
+  user-select: none;
 }
 
 .form-canvas {
@@ -1173,9 +1245,47 @@ body {
   flex: 1;
   width: 100%;
   height: 100%;
-  min-height: 480px;
-  overflow: auto;
+  min-height: 640px;
+  overflow-x: auto;
+  overflow-y: auto;
   box-sizing: border-box;
+  padding-bottom: 40px;
+  transition: transform 0.15s ease-out;
+}
+
+/* Responsividade Fluida no Modo Tela Cheia */
+.web-form-window.fullscreen-mode .vcl-menu-bar,
+.web-form-window.fullscreen-mode .web-mainmenu {
+  width: 100% !important;
+}
+
+@media (min-width: 900px) {
+  .web-form-window.fullscreen-mode [id*="GroupBox1"],
+  .web-form-window.fullscreen-mode [id*="groupbox1"] {
+    width: calc(100% - 32px) !important;
+    max-width: 1800px;
+  }
+
+  .web-form-window.fullscreen-mode [id*="GroupBox2"],
+  .web-form-window.fullscreen-mode [id*="groupbox2"] {
+    width: calc(50% - 24px) !important;
+    max-width: 880px;
+  }
+
+  .web-form-window.fullscreen-mode [id*="GroupBox3"],
+  .web-form-window.fullscreen-mode [id*="groupbox3"] {
+    left: calc(50% + 8px) !important;
+    width: calc(50% - 24px) !important;
+    max-width: 880px;
+  }
+
+  .web-form-window.fullscreen-mode [id*="DBGrid1"],
+  .web-form-window.fullscreen-mode [id*="grid1"] {
+    width: calc(100% - 32px) !important;
+    max-width: 1800px;
+    height: calc(100% - 530px) !important;
+    min-height: 130px;
+  }
 }
 
 /* Controles Web com visual clássico e moderno Delphi VCL */
@@ -1589,10 +1699,7 @@ body {
   height: 100%;
 }
 
-.web-form-window.fullscreen-mode {
-  width: 100% !important;
-  height: 100% !important;
-}
+/* fullscreen mode handled above */
 
 .web-form-titlebar {
   height: 32px;
@@ -1823,6 +1930,27 @@ class WebAppController {
     }
     // Carregar automaticamente todos os relatórios da aplicação
     await this.initReports();
+
+    // Atalhos de teclado para Tela Cheia
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'F11' || (e.altKey && e.key === 'Enter')) {
+        e.preventDefault();
+        this.toggleBrowserFullscreen();
+      }
+    });
+
+    document.addEventListener('fullscreenchange', () => {
+      const isBrowserFull = !!document.fullscreenElement;
+      const btn = document.getElementById('btnHeaderFullscreen');
+      const btnWin = document.getElementById('btnTitlebarFullscreen');
+      if (btn) btn.innerText = isBrowserFull ? '🗗 Sair da Tela Cheia' : '⛶ Tela Cheia';
+      if (btnWin) btnWin.title = isBrowserFull ? 'Sair da Tela Cheia (F11)' : 'Tela Cheia do Navegador (F11)';
+      if (this.isFit) this.applyFitToScreen();
+    });
+
+    window.addEventListener('resize', () => {
+      if (this.isFit) this.applyFitToScreen();
+    });
   }
 
   handleMenuClick(item, idx, handlerName) {
@@ -1871,10 +1999,88 @@ class WebAppController {
     if (items) items.classList.toggle('mobile-open');
   }
 
+  toggleBrowserFullscreen() {
+    if (!document.fullscreenElement) {
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else if (document.documentElement.webkitRequestFullscreen) {
+        document.documentElement.webkitRequestFullscreen();
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      }
+    }
+  }
+
   toggleMaximize() {
     const win = document.getElementById('webFormWindow');
     if (!win) return;
-    win.classList.toggle('fullscreen-mode');
+    const isFull = win.classList.contains('fullscreen-mode');
+    if (isFull) {
+      win.classList.remove('fullscreen-mode');
+      win.classList.add('windowed-mode');
+    } else {
+      win.classList.remove('windowed-mode');
+      win.classList.add('fullscreen-mode');
+    }
+    this.updateMaximizeButton();
+  }
+
+  updateMaximizeButton() {
+    const win = document.getElementById('webFormWindow');
+    const btn = document.getElementById('btnToggleMaximize');
+    const btnHeader = document.getElementById('btnHeaderMaximize');
+    const isFull = win && win.classList.contains('fullscreen-mode');
+    if (btn) {
+      btn.innerText = isFull ? '🗗' : '🗖';
+      btn.title = isFull ? 'Restaurar Janela Flutuante' : 'Maximizar Formulário';
+    }
+    if (btnHeader) {
+      btnHeader.innerText = isFull ? '🗗 Restaurar' : '🗖 Maximizar';
+    }
+  }
+
+  toggleFitToScreen() {
+    this.isFit = !this.isFit;
+    this.applyFitToScreen();
+  }
+
+  applyFitToScreen() {
+    const canvas = document.getElementById('webFormCanvas');
+    const btnFit = document.getElementById('btnHeaderFit');
+    const btnTitleFit = document.getElementById('btnTitlebarFit');
+    if (!canvas) return;
+    if (this.isFit) {
+      const parentW = canvas.parentElement.clientWidth;
+      const parentH = canvas.parentElement.clientHeight;
+      const baseW = Math.max(${width}, 880);
+      const baseH = Math.max(${height}, 630);
+      const scaleX = parentW / baseW;
+      const scaleY = parentH / baseH;
+      const scale = Math.min(scaleX, scaleY, 1.8);
+      canvas.style.transformOrigin = 'top left';
+      canvas.style.transform = 'scale(' + scale + ')';
+      canvas.style.width = baseW + 'px';
+      canvas.style.height = baseH + 'px';
+      if (scaleX > scaleY) {
+        const offset = Math.max(0, (parentW - (baseW * scale)) / 2);
+        canvas.style.marginLeft = offset + 'px';
+      } else {
+        canvas.style.marginLeft = '0px';
+      }
+      if (btnFit) btnFit.innerText = '🔍 Escala 100%';
+      if (btnTitleFit) btnTitleFit.title = 'Voltar para Escala Normal';
+    } else {
+      canvas.style.transform = 'none';
+      canvas.style.width = '100%';
+      canvas.style.height = 'auto';
+      canvas.style.marginLeft = '0px';
+      if (btnFit) btnFit.innerText = '🔍 Ajustar à Tela';
+      if (btnTitleFit) btnTitleFit.title = 'Ajustar Proporcional à Tela';
+    }
   }
 
   closeForm() {

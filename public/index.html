@@ -617,10 +617,14 @@
     <div class="modal-content">
       <div class="modal-header">
         <div style="display: flex; align-items: center; gap: 8px;">
-          <span style="color: #22c55e;">▶</span>
+          <span style="color: #22c55e;">●</span>
           <span id="runModalTitle">Executando Formulário</span>
         </div>
-        <button class="tool-btn" onclick="window.app.runner.close()" style="height: 22px; padding: 0 8px;">✕</button>
+        <div style="display: flex; gap: 4px; align-items: center;">
+          <button class="tool-btn" onclick="window.app.runner.toggleFullscreen()" id="btnRunFullscreen" title="Tela Cheia (F11)" style="height: 22px; padding: 0 8px;">⛶</button>
+          <button class="tool-btn" onclick="window.app.runner.toggleMaximize()" id="btnRunMaximize" title="Maximizar / Restaurar" style="height: 22px; padding: 0 8px;">🗖</button>
+          <button class="tool-btn" onclick="window.app.runner.close()" style="height: 22px; padding: 0 8px;">✕</button>
+        </div>
       </div>
       <div class="modal-body" id="runModalBody">
         <!-- Renderizado dinamicamente via runner.js -->
