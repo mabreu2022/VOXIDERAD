@@ -2354,8 +2354,10 @@ class WebAppController {
       modal = document.createElement('div');
       modal.id = 'webReportModalPreview';
       modal.style.cssText = 'position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:99999; display:flex; flex-direction:column; padding:20px; box-sizing:border-box;';
-      modal.innerHTML = '<div style="display:flex; justify-content:space-between; align-items:center; background:#1e293b; color:#fff; padding:10px 16px; border-radius:6px 6px 0 0;"><span style="font-weight:600;">📑 Visualização de Relatório</span><div style="display:flex; gap:8px;"><button onclick="app.printReport(' + "'" + repName + "'" + ')" style="background:#0284c7; color:#fff; border:none; padding:5px 12px; border-radius:4px; cursor:pointer;">🖨️ Imprimir</button><button onclick="app.closePreviewReport()" style="background:#ef4444; color:#fff; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-weight:bold;">✕ Fechar</button></div></div><div style="flex:1; background:#334155; border-radius:0 0 6px 6px; overflow:hidden;"><iframe id="webReportModalIframe" style="width:100%; height:100%; border:none; background:#fff;"></iframe></div>';
+      modal.innerHTML = '<div style="display:flex; justify-content:space-between; align-items:center; background:#1e293b; color:#fff; padding:10px 16px; border-radius:6px 6px 0 0;"><span style="font-weight:600; display:flex; align-items:center; gap:8px;"><span>📑</span> Visualização de Relatório</span><div style="display:flex; gap:8px;"><button type="button" onclick="app.printReport(' + "'" + repName + "'" + ')" style="background:#0284c7; color:#fff; border:none; padding:6px 14px; border-radius:4px; cursor:pointer; font-weight:600; font-size:12px; display:flex; align-items:center; gap:4px;">🖨️ Imprimir</button><button type="button" id="btnWebReportClose" onclick="app.closePreviewReport()" style="background:#ef4444; color:#fff; border:none; padding:6px 14px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px; display:flex; align-items:center; gap:4px;">✕ Fechar</button></div></div><div style="flex:1; background:#334155; border-radius:0 0 6px 6px; overflow:hidden;"><iframe id="webReportModalIframe" style="width:100%; height:100%; border:none; background:#fff;"></iframe></div>';
       document.body.appendChild(modal);
+    } else {
+      modal.style.display = 'flex';
     }
     const modalIframe = document.getElementById('webReportModalIframe');
     if (modalIframe) {
@@ -2366,10 +2368,37 @@ class WebAppController {
     }
   }
 
+  closePreviewReport() {
+    const modal = document.getElementById('webReportModalPreview');
+    if (modal) {
+      modal.style.display = 'none';
+    }
+  }
+
   refreshReport(repName) {
     this.loadReport(repName);
   }
 }
+
+window.closeWebReportModal = function() {
+  if (window.app && window.app.closePreviewReport) {
+    window.app.closePreviewReport();
+  } else {
+    var m = document.getElementById('webReportModalPreview');
+    if (m) m.style.display = 'none';
+  }
+};
+
+window.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    if (window.app && window.app.closePreviewReport) {
+      window.app.closePreviewReport();
+    } else {
+      var m = document.getElementById('webReportModalPreview');
+      if (m) m.style.display = 'none';
+    }
+  }
+});
 
 window.voxSwitchTab = function(pcName, tabIdx) {
   var pc = document.getElementById(pcName);
