@@ -1,8 +1,8 @@
 {
   "name": "FormERP",
   "title": "Vox ERP Comercial MVC - Gestão Fiscal, Estoque & PDV",
-  "width": 880,
-  "height": 630,
+  "width": 860,
+  "height": 620,
   "components": [
     {
       "id": "c_erp_menu",
@@ -10,15 +10,12 @@
       "type": "vox_MainMenu",
       "left": 0,
       "top": 0,
-      "width": 880,
+      "width": 858,
       "height": 38,
       "props": {
         "Layout": "Top",
         "Title": "Vox ERP Enterprise (MVC)",
         "Items": "Cadastros, Fiscal (NF-e/NFC-e), Estoque, PDV Caixa, Financeiro, Configurações"
-      },
-      "events": {
-        "OnClick_Fiscal__NF_e_NFC_e_": "vox_MainMenu1_Fiscal__NF_e_NFC_e_Click"
       }
     },
     {
@@ -96,7 +93,7 @@
       "type": "vox_GroupBox",
       "left": 16,
       "top": 92,
-      "width": 848,
+      "width": 826,
       "height": 210,
       "props": {
         "Caption": " 1. Destinatário da Nota Fiscal Eletrônica (SEFAZ NF-e 4.00) "
@@ -281,9 +278,9 @@
       "id": "c_lbl_end",
       "name": "vox_Label8",
       "type": "vox_Label",
-      "left": 158,
+      "left": 162,
       "top": 190,
-      "width": 36,
+      "width": 45,
       "height": 18,
       "props": {
         "Caption": "Logr:"
@@ -293,9 +290,9 @@
       "id": "c_edt_end",
       "name": "vox_DBEdit8",
       "type": "vox_DBEdit",
-      "left": 196,
+      "left": 210,
       "top": 186,
-      "width": 190,
+      "width": 210,
       "height": 26,
       "props": {
         "DataSource": "vox_DataSource1",
@@ -306,9 +303,9 @@
       "id": "c_lbl_nro",
       "name": "vox_Label9",
       "type": "vox_Label",
-      "left": 394,
+      "left": 430,
       "top": 190,
-      "width": 20,
+      "width": 25,
       "height": 18,
       "props": {
         "Caption": "Nº:"
@@ -318,9 +315,9 @@
       "id": "c_edt_nro",
       "name": "vox_DBEdit9",
       "type": "vox_DBEdit",
-      "left": 418,
+      "left": 460,
       "top": 186,
-      "width": 50,
+      "width": 60,
       "height": 26,
       "props": {
         "DataSource": "vox_DataSource1",
@@ -331,9 +328,9 @@
       "id": "c_lbl_bairro",
       "name": "vox_Label10",
       "type": "vox_Label",
-      "left": 476,
+      "left": 530,
       "top": 190,
-      "width": 38,
+      "width": 40,
       "height": 18,
       "props": {
         "Caption": "Bairro:"
@@ -343,9 +340,9 @@
       "id": "c_edt_bairro",
       "name": "vox_DBEdit10",
       "type": "vox_DBEdit",
-      "left": 516,
+      "left": 576,
       "top": 186,
-      "width": 98,
+      "width": 110,
       "height": 26,
       "props": {
         "DataSource": "vox_DataSource1",
@@ -356,9 +353,9 @@
       "id": "c_lbl_mun",
       "name": "vox_Label11",
       "type": "vox_Label",
-      "left": 622,
+      "left": 696,
       "top": 190,
-      "width": 34,
+      "width": 30,
       "height": 18,
       "props": {
         "Caption": "IBGE:"
@@ -368,9 +365,9 @@
       "id": "c_edt_mun",
       "name": "vox_DBEdit11",
       "type": "vox_DBEdit",
-      "left": 658,
+      "left": 732,
       "top": 186,
-      "width": 62,
+      "width": 60,
       "height": 26,
       "props": {
         "DataSource": "vox_DataSource1",
@@ -381,14 +378,13 @@
       "id": "c_edt_uf",
       "name": "vox_DBEdit12",
       "type": "vox_DBEdit",
-      "left": 728,
+      "left": 800,
       "top": 186,
-      "width": 36,
+      "width": 30,
       "height": 26,
       "props": {
         "DataSource": "vox_DataSource1",
-        "DataField": "UF",
-        "Text": "SP"
+        "DataField": "UF"
       }
     },
     {
@@ -397,7 +393,7 @@
       "type": "vox_GroupBox",
       "left": 16,
       "top": 312,
-      "width": 418,
+      "width": 410,
       "height": 190,
       "props": {
         "Caption": " 2. Produto, Tributação Fiscal & Estoque "
@@ -547,9 +543,9 @@
       "id": "c_erp_gb_pdv",
       "name": "vox_GroupBox3",
       "type": "vox_GroupBox",
-      "left": 444,
+      "left": 436,
       "top": 312,
-      "width": 420,
+      "width": 406,
       "height": 190,
       "props": {
         "Caption": " 3. Frente de Caixa (PDV) & Pagamento "
@@ -656,8 +652,8 @@
       "type": "vox_DBGrid",
       "left": 16,
       "top": 512,
-      "width": 848,
-      "height": 105,
+      "width": 826,
+      "height": 95,
       "props": {
         "Columns": "Código, Descrição do Produto, NCM, CFOP, Qtd, Preço Unit, Subtotal R$"
       }

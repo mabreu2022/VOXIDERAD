@@ -262,11 +262,16 @@
 
       <div class="tool-sep"></div>
 
-      <!-- Alvo / Plataforma -->
-      <select class="platform-dropdown" style="width: 220px; color: #4cc2ff; font-weight: 600;">
-        <option selected>🌐 Web Browser (HTML5 + REST)</option>
-        <option>📱 Web Mobile / Responsive</option>
+      <!-- Alvo / Plataforma (Target Platforms) -->
+      <select id="toolbarPlatformSelect" class="platform-dropdown" onchange="window.app.onPlatformChange(this.value)" style="width: 220px; color: #4cc2ff; font-weight: 600;" title="Selecionar Target Platform">
+        <option value="web" selected>🌐 Web Browser (HTML5 + REST)</option>
+        <option value="linux">🐧 Linux 64-bit (Remote SSH / IP)</option>
+        <option value="windows">🪟 Windows 64-bit (Native EXE)</option>
       </select>
+
+      <button class="tool-btn" id="btnConfigPlatform" onclick="window.app.openPlatformConfigModal()" title="Configurar Perfil de Conexão Remota Linux (IP, SSH, GCC)" style="padding: 2px 7px; color: #38bdf8;">
+        <span>⚙️</span>
+      </button>
 
       <select class="platform-dropdown" style="width: 80px;">
         <option selected>Debug</option>
@@ -690,6 +695,164 @@
           <span style="color: #22c55e;">● Live Web Preview</span>
         </div>
         <iframe id="webAppIframe" src="" style="width: 100%; height: 500px; border: 1px solid #313947; border-radius: 4px; background: #0d1117;"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       7.1 MODAL CONNECTION PROFILE MANAGER (REMOTE LINUX / SSH / GCC)
+       ======================================================================== -->
+  <div class="modal-overlay" id="connectionProfileModal">
+    <div class="modal-content" style="width: 640px; max-width: 95vw;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="color: #38bdf8; font-size: 16px;">🐧</span>
+          <span style="font-weight: 700;">Connection Profile Manager — Remote Linux (Delphi RAD Style)</span>
+        </div>
+        <button class="tool-btn" onclick="window.app.closePlatformConfigModal()" style="height: 22px; padding: 0 8px;">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 16px; display: flex; flex-direction: column; gap: 14px;">
+        <div style="font-size: 11px; color: #94a3b8; line-height: 1.4;">
+          Configure o perfil de conexão para compilar seu código Vox diretamente em uma máquina ou servidor Linux na rede local via SSH.
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div>
+            <label style="display:block; font-size: 11px; color: #cbd5e1; margin-bottom: 4px; font-weight: 600;">Profile Name:</label>
+            <input type="text" id="profName" class="form-input" style="width: 100%;" value="Linux Server (Dev/Produção)" placeholder="Nome do perfil" />
+          </div>
+          <div>
+            <label style="display:block; font-size: 11px; color: #cbd5e1; margin-bottom: 4px; font-weight: 600;">Target OS:</label>
+            <input type="text" class="form-input" style="width: 100%; color: #38bdf8;" value="Linux 64-bit (x86_64 / ARM64)" readonly />
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px;">
+          <div>
+            <label style="display:block; font-size: 11px; color: #cbd5e1; margin-bottom: 4px; font-weight: 600;">Host IP / Hostname:</label>
+            <input type="text" id="profHost" class="form-input" style="width: 100%;" value="192.168.1.150" placeholder="ex: 192.168.1.150 ou server.local" />
+          </div>
+          <div>
+            <label style="display:block; font-size: 11px; color: #cbd5e1; margin-bottom: 4px; font-weight: 600;">SSH Port:</label>
+            <input type="number" id="profPort" class="form-input" style="width: 100%;" value="22" />
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div>
+            <label style="display:block; font-size: 11px; color: #cbd5e1; margin-bottom: 4px; font-weight: 600;">Username:</label>
+            <input type="text" id="profUser" class="form-input" style="width: 100%;" value="ubuntu" placeholder="ex: ubuntu ou root" />
+          </div>
+          <div>
+            <label style="display:block; font-size: 11px; color: #cbd5e1; margin-bottom: 4px; font-weight: 600;">Auth Type:</label>
+            <select id="profAuthType" class="form-input" style="width: 100%;" onchange="window.app.toggleAuthType(this.value)">
+              <option value="password" selected>Password (Senha)</option>
+              <option value="key">SSH Private Key (Chave .pem/.id_rsa)</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="profPassGroup">
+          <label style="display:block; font-size: 11px; color: #cbd5e1; margin-bottom: 4px; font-weight: 600;">Password:</label>
+          <input type="password" id="profPassword" class="form-input" style="width: 100%;" placeholder="Digite a senha SSH do usuário" />
+        </div>
+
+        <div id="profKeyGroup" style="display: none;">
+          <label style="display:block; font-size: 11px; color: #cbd5e1; margin-bottom: 4px; font-weight: 600;">Private Key Path or Content:</label>
+          <input type="text" id="profKeyPath" class="form-input" style="width: 100%;" placeholder="C:\Users\...\.ssh\id_rsa ou colar chave privada" />
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div>
+            <label style="display:block; font-size: 11px; color: #cbd5e1; margin-bottom: 4px; font-weight: 600;">Remote Build Directory:</label>
+            <input type="text" id="profRemoteDir" class="form-input" style="width: 100%;" value="/tmp/vox_build" />
+          </div>
+          <div>
+            <label style="display:block; font-size: 11px; color: #cbd5e1; margin-bottom: 4px; font-weight: 600;">Remote C Compiler:</label>
+            <select id="profCompiler" class="form-input" style="width: 100%;">
+              <option value="gcc" selected>gcc (GNU C Compiler)</option>
+              <option value="clang">clang (LLVM Clang)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="background: #181d26; border: 1px solid #283040; border-radius: 4px; padding: 10px; display: flex; flex-direction: column; gap: 8px;">
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: #cbd5e1; cursor: pointer;">
+            <input type="checkbox" id="profDownloadBin" checked />
+            <span>📥 Baixar binário compilado (ELF) para a máquina local (<code style="color:#38bdf8;">bin/linux/</code>)</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: #cbd5e1; cursor: pointer;">
+            <input type="checkbox" id="profRunAfter" />
+            <span>▶ Executar remotamente no Linux após compilar e exibir saída no console da IDE</span>
+          </label>
+        </div>
+
+        <!-- Feedback de Teste de Conexão -->
+        <div id="connTestFeedback" style="display: none; padding: 10px; border-radius: 4px; font-size: 11px;"></div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+          <button class="tool-btn" id="btnTestRemoteConn" onclick="window.app.testRemoteLinuxConnection()" style="border: 1px solid #38bdf8; color: #38bdf8; padding: 6px 14px; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+            <span>🔌</span> Test Connection
+          </button>
+          <div style="display: flex; gap: 8px;">
+            <button class="tool-btn" onclick="window.app.closePlatformConfigModal()" style="padding: 6px 14px; font-size: 11px;">Cancelar</button>
+            <button class="tool-btn btn-run-delphi" onclick="window.app.savePlatformProfile()" style="padding: 6px 16px; font-size: 11px; font-weight: 600;">💾 Salvar Perfil</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       7.2 MODAL DE BUILD OUTPUT / LOG DE COMPILAÇÃO LINUX REMOTA
+       ======================================================================== -->
+  <div class="modal-overlay" id="remoteBuildModal">
+    <div class="modal-content" style="width: 760px; max-width: 95vw;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="color: #38bdf8; font-size: 16px;">🐧</span>
+          <span id="remoteBuildTitle" style="font-weight: 700;">Compilação Remota no Linux (SSH + GCC)</span>
+        </div>
+        <button class="tool-btn" onclick="window.app.closeRemoteBuildModal()" style="height: 22px; padding: 0 8px;">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #94a3b8;">
+          <span id="remoteBuildHostStatus">Servidor: 192.168.1.150:22</span>
+          <span id="remoteBuildBadge" style="padding: 2px 8px; border-radius: 10px; font-weight: 600; font-size: 10px; background: #0369a1; color: #e0f2fe;">Iniciando...</span>
+        </div>
+        <div id="remoteBuildConsole" style="width: 100%; height: 320px; border: 1px solid #313947; border-radius: 4px; background: #090d13; font-family: 'Consolas', monospace; font-size: 11px; color: #cbd5e1; padding: 12px; overflow-y: auto; white-space: pre-wrap;"></div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span id="remoteBuildLocalPath" style="font-size: 11px; color: #38bdf8;"></span>
+          <button class="tool-btn" onclick="window.app.closeRemoteBuildModal()" style="padding: 6px 14px; font-size: 11px;">Fechar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- ========================================================================
+       7.3 MODAL DE BUILD OUTPUT / LOG DE COMPILAÇÃO WINDOWS NATIVO
+       ======================================================================== -->
+  <div class="modal-overlay" id="windowsBuildModal">
+    <div class="modal-content" style="width: 760px; max-width: 95vw;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="color: #38bdf8; font-size: 16px;">🪟</span>
+          <span id="windowsBuildTitle" style="font-weight: 700;">Compilação Nativa Windows 64-bit (TCC / GCC / MSVC)</span>
+        </div>
+        <button class="tool-btn" onclick="window.app.closeWindowsBuildModal()" style="height: 22px; padding: 0 8px;">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #94a3b8;">
+          <span id="windowsBuildInfo">Compilador: TCC embutido / GCC / MSVC</span>
+          <span id="windowsBuildBadge" style="padding: 2px 8px; border-radius: 10px; font-weight: 600; font-size: 10px; background: #0369a1; color: #e0f2fe;">Compilando...</span>
+        </div>
+        <div id="windowsBuildConsole" style="width: 100%; height: 320px; border: 1px solid #313947; border-radius: 4px; background: #090d13; font-family: 'Consolas', monospace; font-size: 11px; color: #cbd5e1; padding: 12px; overflow-y: auto; white-space: pre-wrap;"></div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span id="windowsBuildLocalPath" style="font-size: 11px; color: #38bdf8;"></span>
+          <div style="display: flex; gap: 8px;">
+            <button class="tool-btn btn-run-delphi" id="btnRunWindowsExe" onclick="window.app.runWindowsExeDirectly()" style="display:none; padding: 6px 14px; font-size: 11px; font-weight: 600;">▶ Executar .exe</button>
+            <button class="tool-btn" onclick="window.app.closeWindowsBuildModal()" style="padding: 6px 14px; font-size: 11px;">Fechar</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>

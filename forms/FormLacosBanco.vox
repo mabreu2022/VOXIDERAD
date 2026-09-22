@@ -1,0 +1,238 @@
+// ==============================================================================
+// FormLacosBanco.vox — Unidade RAD Gerada pelo Vox Studio
+// ==============================================================================
+
+import Vox_UI, Vox_Database, Vox_SysUtils;
+
+classe FormLacosBanco herda TVoxForm {
+private:
+    // ── Membros e Métodos Privados ──────────────────────────────────────────
+    var _initialized: bool;
+
+    private procedure LogInterno(msg: str) {
+        println("[DEBUG INTERNO] " + msg);
+    }
+
+published:
+    // ── Propriedades e Componentes Publicados (Object Inspector) ─────────────
+    var width: int;
+    var height: int;
+    var title: str;
+    let mut vox_Connection1: TVoxConnection;
+    let mut vox_Query1: TVoxQuery;
+    let mut vox_DataSource1: TVoxDataSource;
+    let mut vox_GroupBox1: TVoxGroupBox;
+    let mut btnWhileEof: TVoxButton;
+    let mut btnForIn: TVoxButton;
+    let mut btnBreakContinue: TVoxButton;
+    let mut btnClearLog: TVoxButton;
+    let mut vox_Label1: TVoxLabel;
+    let mut vox_DBGrid1: TVoxDBGrid;
+    let mut vox_Label2: TVoxLabel;
+    let mut memoLog: TVoxMemo;
+
+public:
+    // ── Construtor e Inicialização de Tela ────────────────────────────────────
+    new() {
+        this.title = "Laços de Repetição com Banco de Dados (While & For..in)";
+        this.width = 820;
+        this.height = 560;
+        this._initialized = true;
+
+        this.vox_Connection1 = new TVoxConnection();
+        this.vox_Connection1.left = 16;
+        this.vox_Connection1.top = 12;
+        this.vox_Connection1.width = 46;
+        this.vox_Connection1.height = 46;
+        this.vox_Connection1.driverName = "SQLite";
+        this.vox_Connection1.database = "clientes_vox.db";
+        this.vox_Connection1.connected = true;
+
+        this.vox_Query1 = new TVoxQuery();
+        this.vox_Query1.left = 70;
+        this.vox_Query1.top = 12;
+        this.vox_Query1.width = 46;
+        this.vox_Query1.height = 46;
+        this.vox_Query1.connection = "vox_Connection1";
+        this.vox_Query1.sql = "SELECT id, nome, cidade, saldo FROM clientes ORDER BY id ASC;";
+        this.vox_Query1.active = true;
+
+        this.vox_DataSource1 = new TVoxDataSource();
+        this.vox_DataSource1.left = 124;
+        this.vox_DataSource1.top = 12;
+        this.vox_DataSource1.width = 46;
+        this.vox_DataSource1.height = 46;
+        this.vox_DataSource1.dataSet = "vox_Query1";
+
+        this.vox_GroupBox1 = new TVoxGroupBox();
+        this.vox_GroupBox1.left = 16;
+        this.vox_GroupBox1.top = 62;
+        this.vox_GroupBox1.width = 788;
+        this.vox_GroupBox1.height = 85;
+        this.vox_GroupBox1.caption = " Escolha a Estrutura de Laço para Executar no Banco de Dados ";
+
+        this.btnWhileEof = new TVoxButton();
+        this.btnWhileEof.left = 32;
+        this.btnWhileEof.top = 92;
+        this.btnWhileEof.width = 175;
+        this.btnWhileEof.height = 38;
+        this.btnWhileEof.caption = "▶ Laço While (!Query.Eof)";
+        this.btnWhileEof.onclick = this.btnWhileEofClick;
+
+        this.btnForIn = new TVoxButton();
+        this.btnForIn.left = 215;
+        this.btnForIn.top = 92;
+        this.btnForIn.width = 185;
+        this.btnForIn.height = 38;
+        this.btnForIn.caption = "⚡ Laço For..in (Array Records)";
+        this.btnForIn.onclick = this.btnForInClick;
+
+        this.btnBreakContinue = new TVoxButton();
+        this.btnBreakContinue.left = 408;
+        this.btnBreakContinue.top = 92;
+        this.btnBreakContinue.width = 195;
+        this.btnBreakContinue.height = 38;
+        this.btnBreakContinue.caption = "🛑 Laço com Break e Continue";
+        this.btnBreakContinue.onclick = this.btnBreakContinueClick;
+
+        this.btnClearLog = new TVoxButton();
+        this.btnClearLog.left = 611;
+        this.btnClearLog.top = 92;
+        this.btnClearLog.width = 175;
+        this.btnClearLog.height = 38;
+        this.btnClearLog.caption = "🧹 Limpar Console / Log";
+        this.btnClearLog.onclick = this.btnClearLogClick;
+
+        this.vox_Label1 = new TVoxLabel();
+        this.vox_Label1.left = 16;
+        this.vox_Label1.top = 156;
+        this.vox_Label1.width = 250;
+        this.vox_Label1.height = 18;
+        this.vox_Label1.caption = "📊 Registros na Tabela SQLite (DBGrid):";
+
+        this.vox_DBGrid1 = new TVoxDBGrid();
+        this.vox_DBGrid1.left = 16;
+        this.vox_DBGrid1.top = 178;
+        this.vox_DBGrid1.width = 380;
+        this.vox_DBGrid1.height = 360;
+        this.vox_DBGrid1.dataSource = "vox_DataSource1";
+
+        this.vox_Label2 = new TVoxLabel();
+        this.vox_Label2.left = 412;
+        this.vox_Label2.top = 156;
+        this.vox_Label2.width = 250;
+        this.vox_Label2.height = 18;
+        this.vox_Label2.caption = "💻 Saída da Execução dos Laços (Memo):";
+
+        this.memoLog = new TVoxMemo();
+        this.memoLog.left = 412;
+        this.memoLog.top = 178;
+        this.memoLog.width = 392;
+        this.memoLog.height = 360;
+        this.memoLog.text = "=== DEMONSTRAÇÃO DE LAÇOS (WHILE / FOR..IN) NO BANCO DE DADOS ===\nClique em um dos botões acima para executar os laços passo a passo...";
+
+        println("Formulário " + this.title + " inicializado no Vox Studio.");
+    }
+
+
+    // Tratador de Evento Publicado: btnWhileEof -> OnClick
+    public procedure btnWhileEofClick(sender: any) {
+        // 1. LAÇO WHILE COM CURSOR DATASET (ESTILO DELPHI)
+        this.memoLog.lines.add("═════════════════════════════════════════════════");
+        this.memoLog.lines.add("▶ INICIANDO: While !Query.eof() com Avanço .next()");
+        this.memoLog.lines.add("═════════════════════════════════════════════════");
+
+        this.vox_Query1.sql = "SELECT id, nome, cidade, saldo FROM clientes ORDER BY id ASC;";
+        this.vox_Query1.open();
+
+        let mut totalLidos: int = 0;
+        let mut somaTotal: float = 0.0;
+
+        // Laço While clássico: itera registro por registro até o fim da tabela
+        while !this.vox_Query1.eof() {
+            totalLidos = totalLidos + 1;
+            let id = this.vox_Query1.fieldByName("id").asInt();
+            let nome = this.vox_Query1.fieldByName("nome").asString();
+            let cidade = this.vox_Query1.fieldByName("cidade").asString();
+            let saldo = this.vox_Query1.fieldByName("saldo").asFloat();
+
+            somaTotal = somaTotal + saldo;
+
+            this.memoLog.lines.add("[" + str(totalLidos) + "] ID: " + str(id) + " | " + nome + " (" + cidade + ") | Saldo: R$ " + str(saldo));
+
+            // Avança o ponteiro do cursor para o próximo registro
+            this.vox_Query1.next();
+        }
+
+        this.vox_Query1.close();
+        this.memoLog.lines.add("✔️ Fim do laço While: " + str(totalLidos) + " registros lidos.");
+        this.memoLog.lines.add("💰 Total acumulado: R$ " + str(somaTotal) + "\n");
+    }
+
+    // Tratador de Evento Publicado: btnForIn -> OnClick
+    public procedure btnForInClick(sender: any) {
+        // 2. LAÇO FOR..IN COM CONSULTA RETORNANDO ARRAY DE REGISTROS
+        this.memoLog.lines.add("═════════════════════════════════════════════════");
+        this.memoLog.lines.add("⚡ INICIANDO: For cliente in Array de Registros");
+        this.memoLog.lines.add("═════════════════════════════════════════════════");
+
+        // Executa a consulta e recebe diretamente uma lista iterável
+        let registros = sqlite_query(this.vox_Connection1.handle, "SELECT id, nome, cidade, saldo FROM clientes WHERE saldo > 0;");
+
+        // Laço For..in nativo do Vox
+        for cliente in registros {
+            let nome = str(cliente["nome"]);
+            let saldo = float(cliente["saldo"]);
+
+            if saldo >= 10000.0 {
+                this.memoLog.lines.add("💎 CLIENTE VIP: " + nome + " -> Saldo: R$ " + str(saldo));
+            } else {
+                this.memoLog.lines.add("👤 CLIENTE REGULAR: " + nome + " -> Saldo: R$ " + str(saldo));
+            }
+        }
+
+        this.memoLog.lines.add("✔️ Fim do laço For..in: " + str(len(registros)) + " registros processados!\n");
+    }
+
+    // Tratador de Evento Publicado: btnBreakContinue -> OnClick
+    public procedure btnBreakContinueClick(sender: any) {
+        // 3. LAÇO COM CONTROLE DE FLUXO (BREAK E CONTINUE)
+        this.memoLog.lines.add("═════════════════════════════════════════════════");
+        this.memoLog.lines.add("🛑 INICIANDO: Laço com Controle de Fluxo");
+        this.memoLog.lines.add("═════════════════════════════════════════════════");
+
+        let clientes = sqlite_query(this.vox_Connection1.handle, "SELECT id, nome, saldo FROM clientes;");
+
+        for cli in clientes {
+            let saldo = float(cli["saldo"]);
+            let nome = str(cli["nome"]);
+
+            // 'continue': pula clientes com saldo menor ou igual a 1.000
+            if saldo <= 1000.0 {
+                this.memoLog.lines.add("⏭️ [CONTINUE] Ignorando " + nome + " (saldo baixo: R$ " + str(saldo) + ")");
+                continue;
+            }
+
+            // 'break': interrompe imediatamente ao encontrar saldo extraordinário (> 30.000)
+            if saldo >= 30000.0 {
+                this.memoLog.lines.add("🛑 [BREAK] Interrompendo laço! Localizado cliente com saldo > 30k: " + nome);
+                break;
+            }
+
+            this.memoLog.lines.add("✔️ Registro aceito: " + nome + " (R$ " + str(saldo) + ")");
+        }
+        this.memoLog.lines.add("─────────────────────────────────────────────\n");
+    }
+
+    // Tratador de Evento Publicado: btnClearLog -> OnClick
+    public procedure btnClearLogClick(sender: any) {
+        this.memoLog.lines.clear();
+        this.memoLog.lines.add("Console limpo. Selecione um dos laços acima para executar.");
+    }
+}
+
+// ── Ponto de Entrada para Execução Standalone ─────────────────────────────────
+public fn main() -> void {
+    let app = new FormLacosBanco();
+    println("Janela ativa: " + app.title + " [" + str(app.width) + "x" + str(app.height) + "]");
+}

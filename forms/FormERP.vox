@@ -86,7 +86,6 @@ public:
         this.vox_MainMenu1.layout = "Top";
         this.vox_MainMenu1.items = "Cadastros, Fiscal (NF-e/NFC-e), Estoque, PDV Caixa, Financeiro, Configurações";
         this.vox_MainMenu1.title = "Vox ERP Enterprise (MVC)";
-        this.vox_MainMenu1.onclick_fiscal__nf_e_nfc_e_ = this.vox_MainMenu1_Fiscal__NF_e_NFC_e_Click;
 
         this.vox_Connection1 = new TVoxConnection();
         this.vox_Connection1.left = 16;
@@ -468,39 +467,29 @@ public:
     }
 
 
-    // Tratador de Evento Publicado: vox_MainMenu1 -> OnClick_Fiscal__NF_e_NFC_e_
-    public procedure vox_MainMenu1_Fiscal__NF_e_NFC_e_Click(sender: any) {
-        println("[VOX FISCAL] Abrindo painel de gestão de NF-e 4.00 e NFC-e...");
-    }
-
-    // Tratador de Evento: vox_Button1 -> Transmitir / Emitir NF-e 4.00
+    // Tratador de Evento Publicado: vox_Button1 -> OnClick
     public procedure vox_Button1Click(sender: any) {
-        println("[VOX FISCAL] Validando dados do destinatário e itens da NF-e...");
-        println("[VOX FISCAL] Gerando Chave de Acesso SEFAZ de 44 dígitos...");
-        println("[VOX FISCAL] Transmitindo NF-e 4.00 para autorização SEFAZ (Status 100 - Autorizado o uso)...");
-        println("[VOX FISCAL] Gerando DANFE com código de barras e disponibilizando download do XML.");
+        println("[VOX EVENT] vox_Button1 -> OnClick acionado!");
     }
 
-    // Tratador de Evento: vox_Button2 -> Inserir no Carrinho PDV
+    // Tratador de Evento Publicado: vox_Button2 -> OnClick
     public procedure vox_Button2Click(sender: any) {
-        println("[VOX PDV] Validando saldo em estoque e adicionando item ao carrinho da venda...");
+        println("[VOX EVENT] vox_Button2 -> OnClick acionado!");
     }
 
-    // Tratador de Evento: vox_Button3 -> Pagar com PIX
+    // Tratador de Evento Publicado: vox_Button3 -> OnClick
     public procedure vox_Button3Click(sender: any) {
-        println("[VOX PDV] Gerando QR Code PIX dinâmico do Banco Central e chave Copia-e-Cola...");
+        println("[VOX EVENT] vox_Button3 -> OnClick acionado!");
     }
 
-    // Tratador de Evento: vox_Button4 -> Dinheiro / Troco
+    // Tratador de Evento Publicado: vox_Button4 -> OnClick
     public procedure vox_Button4Click(sender: any) {
-        println("[VOX PDV] Calculando troco e registrando recebimento em dinheiro vivo...");
+        println("[VOX EVENT] vox_Button4 -> OnClick acionado!");
     }
 
-    // Tratador de Evento: vox_Button5 -> Finalizar Venda & Imprimir Cupom Fiscal NFC-e
+    // Tratador de Evento Publicado: vox_Button5 -> OnClick
     public procedure vox_Button5Click(sender: any) {
-        println("[VOX PDV] Dando baixa automática no saldo de estoque dos produtos vendidos...");
-        println("[VOX PDV] Lançando receita da venda no Fluxo de Caixa / Financeiro...");
-        println("[VOX PDV] Emitindo Cupom Fiscal Eletrônico NFC-e (80mm) com QR Code oficial SEFAZ!");
+        println("[VOX EVENT] vox_Button5 -> OnClick acionado!");
     }
 }
 

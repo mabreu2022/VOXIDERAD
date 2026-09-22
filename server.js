@@ -25,6 +25,351 @@ try {
   console.log('[SQLite] Módulo nativo node:sqlite não disponível ou opcional:', e.message);
 }
 
+// Suporte a SSH / SCP Remoto (Compilação e Deploy no Linux)
+let ssh2 = null;
+try {
+  ssh2 = require('ssh2');
+} catch (e) {
+  console.log('[SSH] Módulo ssh2 não disponível:', e.message);
+}
+
+const PROFILES_PATH = path.resolve(WORKSPACE_DIR, 'remote_profiles.json');
+
+function getRemoteProfiles() {
+  if (fs.existsSync(PROFILES_PATH)) {
+    try {
+      return JSON.parse(fs.readFileSync(PROFILES_PATH, 'utf-8'));
+    } catch (e) {}
+  }
+  return [
+    {
+      id: 'default_linux',
+      name: 'Servidor Linux Remoto (Ubuntu/Debian)',
+      platform: 'linux',
+      host: '192.168.1.150',
+      port: 22,
+      user: 'ubuntu',
+      authType: 'password',
+      password: '',
+      privateKey: '',
+      remoteDir: '/tmp/vox_build',
+      compiler: 'gcc',
+      cflags: '-std=c99 -O2 -lm',
+      downloadBinary: true,
+      runAfterBuild: false
+    }
+  ];
+}
+
+function saveRemoteProfiles(profiles) {
+  fs.writeFileSync(PROFILES_PATH, JSON.stringify(profiles, null, 2), 'utf-8');
+}
+
+function getVoxCliPath() {
+  const candidates = [
+    path.resolve(WORKSPACE_DIR, 'dist/cli/index.js'),
+    path.resolve(__dirname, '../linguagem/dist/cli/index.js'),
+    path.resolve(__dirname, 'dist/cli/index.js')
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  return null;
+}
+
+function getVoxRuntimeHeader() {
+  const candidates = [
+    path.resolve(__dirname, 'templates/vox_runtime.h'),
+    path.resolve(__dirname, '../linguagem/src/codegen/vox_runtime.h'),
+    path.resolve(WORKSPACE_DIR, 'templates/vox_runtime.h'),
+    path.resolve(WORKSPACE_DIR, 'src/codegen/vox_runtime.h')
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  return null;
+}
+
+function testSshConnection(config) {
+  return new Promise((resolve) => {
+    if (!ssh2) {
+      return resolve({ ok: false, error: 'Módulo ssh2 não está instalado no servidor da IDE.' });
+    }
+    const { Client } = ssh2;
+    const conn = new Client();
+    let isDone = false;
+    const startTime = Date.now();
+
+    const finish = (result) => {
+      if (isDone) return;
+      isDone = true;
+      try { conn.end(); } catch (e) {}
+      resolve(result);
+    };
+
+    const timer = setTimeout(() => {
+      finish({ ok: false, error: `Tempo limite esgotado (10s) ao conectar em ${config.host}:${config.port}` });
+    }, 10000);
+
+    conn.on('ready', () => {
+      conn.exec('uname -s -m -r 2>/dev/null; which gcc clang 2>/dev/null; gcc --version 2>/dev/null | head -n 1', (err, stream) => {
+        if (err) {
+          clearTimeout(timer);
+          return finish({ ok: false, error: `Falha ao executar teste: ${err.message}` });
+        }
+        let stdout = '';
+        let stderr = '';
+        stream.on('data', (d) => { stdout += d.toString(); });
+        stream.stderr.on('data', (d) => { stderr += d.toString(); });
+        stream.on('close', (code) => {
+          clearTimeout(timer);
+          const latencyMs = Date.now() - startTime;
+          const lines = stdout.trim().split('\n').filter(Boolean);
+          const osInfo = lines[0] || 'Linux (desconhecido)';
+          const hasGcc = stdout.includes('gcc') || stdout.includes('clang');
+          const compVer = lines.find(l => l.includes('gcc') || l.includes('clang') || l.includes('Ubuntu') || l.includes('Debian')) || (hasGcc ? 'GCC/Clang disponível' : 'Compilador C não encontrado no PATH');
+
+          finish({
+            ok: code === 0 || hasGcc,
+            host: config.host,
+            port: config.port,
+            user: config.username,
+            latencyMs,
+            os: osInfo,
+            compiler: compVer,
+            hasCompiler: hasGcc,
+            rawOutput: stdout.trim() || stderr.trim()
+          });
+        });
+      });
+    });
+
+    conn.on('error', (err) => {
+      clearTimeout(timer);
+      finish({ ok: false, error: `Erro SSH com ${config.host}:${config.port} — ${err.message}` });
+    });
+
+    try {
+      conn.connect(config);
+    } catch (e) {
+      clearTimeout(timer);
+      finish({ ok: false, error: `Falha de configuração SSH: ${e.message}` });
+    }
+  });
+}
+
+function buildRemoteLinux({ code, projectName, formName, profile, downloadBinary, runAfterBuild }) {
+  return new Promise(async (resolve) => {
+    if (!ssh2) {
+      return resolve({ ok: false, error: 'Módulo ssh2 não está instalado.' });
+    }
+
+    const safeName = (projectName || formName || 'app').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const cliPath = getVoxCliPath();
+    const runtimeHeaderPath = getVoxRuntimeHeader();
+
+    if (!cliPath) {
+      return resolve({ ok: false, error: 'Compilador CLI da Linguagem Vox não encontrado em dist/cli/index.js' });
+    }
+    if (!runtimeHeaderPath) {
+      return resolve({ ok: false, error: 'Cabeçalho runtime vox_runtime.h não encontrado.' });
+    }
+
+    // 1. Transpilar Vox para C99
+    const tempVoxFile = path.resolve(WORKSPACE_DIR, `.temp_remote_${safeName}.vox`);
+    const tempCFile = path.resolve(WORKSPACE_DIR, `.temp_remote_${safeName}.c`);
+    fs.writeFileSync(tempVoxFile, code, 'utf-8');
+
+    let transpileRes;
+    try {
+      const proc = spawn('node', [cliPath, 'build', tempVoxFile, '--emit-c'], {
+        cwd: WORKSPACE_DIR
+      });
+      let out = '';
+      let err = '';
+      proc.stdout.on('data', d => { out += d.toString(); });
+      proc.stderr.on('data', d => { err += d.toString(); });
+      await new Promise(r => proc.on('close', code => { transpileRes = { code, out, err }; r(); }));
+    } catch (e) {
+      try { if (fs.existsSync(tempVoxFile)) fs.unlinkSync(tempVoxFile); } catch (_) {}
+      return resolve({ ok: false, phase: 'transpile', error: `Falha ao executar transpilação: ${e.message}` });
+    }
+
+    if (!fs.existsSync(tempCFile)) {
+      try { if (fs.existsSync(tempVoxFile)) fs.unlinkSync(tempVoxFile); } catch (_) {}
+      return resolve({
+        ok: false,
+        phase: 'transpile',
+        error: `Erro de compilação Vox:\n${transpileRes.err || transpileRes.out || 'Arquivo C não gerado.'}`
+      });
+    }
+
+    const cContent = fs.readFileSync(tempCFile, 'utf-8');
+    const headerContent = fs.readFileSync(runtimeHeaderPath, 'utf-8');
+
+    // Limpeza de arquivos temporários locais
+    try {
+      if (fs.existsSync(tempVoxFile)) fs.unlinkSync(tempVoxFile);
+      if (fs.existsSync(tempCFile)) fs.unlinkSync(tempCFile);
+      const tempExe = tempVoxFile.replace(/\.vox$/, '.exe');
+      if (fs.existsSync(tempExe)) fs.unlinkSync(tempExe);
+    } catch (_) {}
+
+    // 2. Conectar via SSH2
+    const { Client } = ssh2;
+    const conn = new Client();
+    const startTime = Date.now();
+
+    const sshConfig = {
+      host: profile.host || '127.0.0.1',
+      port: parseInt(profile.port, 10) || 22,
+      username: profile.user || 'root',
+      readyTimeout: 15000
+    };
+
+    if (profile.authType === 'key' && profile.privateKey) {
+      sshConfig.privateKey = profile.privateKey.startsWith('---')
+        ? profile.privateKey
+        : fs.readFileSync(path.resolve(profile.privateKey), 'utf-8');
+      if (profile.passphrase) sshConfig.passphrase = profile.passphrase;
+    } else if (profile.password) {
+      sshConfig.password = profile.password;
+    }
+
+    conn.on('error', (err) => {
+      resolve({ ok: false, phase: 'ssh_connect', error: `Erro na conexão SSH: ${err.message}` });
+    });
+
+    conn.on('ready', () => {
+      const remoteDir = profile.remoteDir || '/tmp/vox_build';
+      const compiler = profile.compiler || 'gcc';
+      const cflags = profile.cflags || '-std=c99 -O2 -lm';
+
+      conn.exec(`mkdir -p "${remoteDir}"`, (err, stream) => {
+        if (err) {
+          conn.end();
+          return resolve({ ok: false, phase: 'mkdir', error: err.message });
+        }
+
+        stream.on('close', () => {
+          conn.sftp((sftpErr, sftp) => {
+            if (sftpErr) {
+              conn.end();
+              return resolve({ ok: false, phase: 'sftp', error: sftpErr.message });
+            }
+
+            const remoteCPath = `${remoteDir}/${safeName}.c`;
+            const remoteHeaderPath = `${remoteDir}/vox_runtime.h`;
+
+            sftp.writeFile(remoteHeaderPath, headerContent, (wErr1) => {
+              if (wErr1) {
+                conn.end();
+                return resolve({ ok: false, phase: 'upload_runtime', error: wErr1.message });
+              }
+
+              sftp.writeFile(remoteCPath, cContent, (wErr2) => {
+                if (wErr2) {
+                  conn.end();
+                  return resolve({ ok: false, phase: 'upload_c', error: wErr2.message });
+                }
+
+                // 3. Executar comando de compilação no Linux remoto
+                const compileCmd = `cd "${remoteDir}" && ${compiler} ${cflags} "${safeName}.c" -I . -o "${safeName}"`;
+                conn.exec(compileCmd, (cErr, cStream) => {
+                  if (cErr) {
+                    conn.end();
+                    return resolve({ ok: false, phase: 'compile_exec', error: cErr.message });
+                  }
+
+                  let cStdout = '';
+                  let cStderr = '';
+                  cStream.on('data', d => { cStdout += d.toString(); });
+                  cStream.stderr.on('data', d => { cStderr += d.toString(); });
+
+                  cStream.on('close', async (exitCode) => {
+                    const durationMs = Date.now() - startTime;
+                    if (exitCode !== 0) {
+                      conn.end();
+                      return resolve({
+                        ok: false,
+                        phase: 'gcc_compile',
+                        exitCode,
+                        error: `Falha na compilação remota (${compiler} código ${exitCode}):\n${cStderr || cStdout}`,
+                        output: cStdout + cStderr,
+                        durationMs
+                      });
+                    }
+
+                    let localBinaryPath = null;
+
+                    // 4. Download opcional do binário ELF compilado
+                    if (downloadBinary !== false) {
+                      try {
+                        const localBinDir = path.resolve(WORKSPACE_DIR, 'bin/linux');
+                        fs.mkdirSync(localBinDir, { recursive: true });
+                        localBinaryPath = path.join(localBinDir, safeName);
+                        const remoteBinPath = `${remoteDir}/${safeName}`;
+
+                        await new Promise((resGet, rejGet) => {
+                          sftp.fastGet(remoteBinPath, localBinaryPath, (dlErr) => {
+                            if (dlErr) rejGet(dlErr);
+                            else resGet();
+                          });
+                        });
+                      } catch (dlErr) {
+                        console.warn('[Remote Linux] Falha ao baixar binário:', dlErr.message);
+                      }
+                    }
+
+                    // 5. Execução remota opcional
+                    let runOutput = null;
+                    if (runAfterBuild) {
+                      try {
+                        await new Promise((resRun) => {
+                          conn.exec(`cd "${remoteDir}" && ./"${safeName}"`, (rErr, rStream) => {
+                            if (rErr) return resRun();
+                            let rOut = '';
+                            let rErrOut = '';
+                            rStream.on('data', d => { rOut += d.toString(); });
+                            rStream.stderr.on('data', d => { rErrOut += d.toString(); });
+                            rStream.on('close', () => {
+                              runOutput = (rOut + (rErrOut ? '\n[STDERR]: ' + rErrOut : '')).trim();
+                              resRun();
+                            });
+                          });
+                        });
+                      } catch (_) {}
+                    }
+
+                    conn.end();
+                    resolve({
+                      ok: true,
+                      host: profile.host,
+                      binaryName: safeName,
+                      remotePath: `${remoteDir}/${safeName}`,
+                      localBinary: localBinaryPath ? path.relative(WORKSPACE_DIR, localBinaryPath).replace(/\\/g, '/') : null,
+                      compiler: compiler,
+                      compileOutput: (cStdout + cStderr).trim() || `Compilado com sucesso usando ${compiler} (${durationMs}ms)`,
+                      runOutput,
+                      durationMs
+                    });
+                  });
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+
+    try {
+      conn.connect(sshConfig);
+    } catch (e) {
+      resolve({ ok: false, phase: 'connect_init', error: e.message });
+    }
+  });
+}
+
 // MIME types comuns
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -1203,6 +1548,187 @@ const server = http.createServer(async (req, res) => {
       });
     } catch (err) {
       return sendJson(res, 500, { error: err.message });
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // API: Perfis de Conexão Remota / Plataformas (Delphi Connection Profiles)
+  // --------------------------------------------------------------------------
+  if (pathname === '/api/platform/profiles' && req.method === 'GET') {
+    return sendJson(res, 200, { profiles: getRemoteProfiles() });
+  }
+
+  if (pathname === '/api/platform/profiles' && req.method === 'POST') {
+    try {
+      const body = await parseBody(req);
+      if (body && Array.isArray(body.profiles)) {
+        saveRemoteProfiles(body.profiles);
+        return sendJson(res, 200, { success: true, profiles: body.profiles });
+      }
+      return sendJson(res, 400, { error: 'Formato de perfis inválido' });
+    } catch (err) {
+      return sendJson(res, 500, { error: err.message });
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // API: Testar Conexão SSH Remota (Ping, SSH Handshake, Versão do GCC/SO)
+  // --------------------------------------------------------------------------
+  if (pathname === '/api/platform/remote-linux/test' && req.method === 'POST') {
+    try {
+      const body = await parseBody(req);
+      const sshConfig = {
+        host: body.host || '127.0.0.1',
+        port: parseInt(body.port, 10) || 22,
+        username: body.user || 'root',
+        readyTimeout: 8000
+      };
+
+      if (body.authType === 'key' && body.privateKey) {
+        sshConfig.privateKey = body.privateKey.startsWith('---')
+          ? body.privateKey
+          : fs.readFileSync(path.resolve(body.privateKey), 'utf-8');
+        if (body.passphrase) sshConfig.passphrase = body.passphrase;
+      } else if (body.password) {
+        sshConfig.password = body.password;
+      }
+
+      const result = await testSshConnection(sshConfig);
+      return sendJson(res, 200, result);
+    } catch (err) {
+      return sendJson(res, 500, { ok: false, error: err.message });
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // API: Compilar no Linux Remoto via SSH (Transpilação C99 + Deploy + GCC)
+  // --------------------------------------------------------------------------
+  if (pathname === '/api/platform/remote-linux/build' && req.method === 'POST') {
+    try {
+      const body = await parseBody(req);
+      const {
+        code,
+        projectName = 'Projeto1',
+        formName = 'Unit1',
+        profile = {},
+        downloadBinary = true,
+        runAfterBuild = false
+      } = body;
+
+      if (!code || !code.trim()) {
+        return sendJson(res, 400, { ok: false, error: 'Código fonte Vox não fornecido para compilação.' });
+      }
+
+      const result = await buildRemoteLinux({
+        code,
+        projectName,
+        formName,
+        profile,
+        downloadBinary,
+        runAfterBuild
+      });
+
+      return sendJson(res, 200, result);
+    } catch (err) {
+      return sendJson(res, 500, { ok: false, error: err.message });
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // API: Compilar para Windows 64-bit Nativo (TCC / GCC / MSVC via CLI Vox)
+  // --------------------------------------------------------------------------
+  if (pathname === '/api/platform/windows/build' && req.method === 'POST') {
+    try {
+      const { code, projectName = 'Projeto1', formName = 'Unit1', runAfterBuild = false } = await parseBody(req);
+
+      if (!code || !code.trim()) {
+        return sendJson(res, 400, { ok: false, error: 'Código fonte Vox não fornecido para compilação.' });
+      }
+
+      const cliPath = getVoxCliPath();
+      if (!cliPath) {
+        return sendJson(res, 400, { ok: false, error: 'Compilador CLI da Linguagem Vox não encontrado em dist/cli/index.js. Certifique-se de que o repositório da linguagem Vox está presente.' });
+      }
+
+      const safeName = (projectName || formName || 'app').replace(/[^a-zA-Z0-9_-]/g, '_');
+      const binDir = path.resolve(WORKSPACE_DIR, 'bin', 'windows');
+      fs.mkdirSync(binDir, { recursive: true });
+
+      const tempVoxFile = path.resolve(WORKSPACE_DIR, `.temp_win64_${safeName}.vox`);
+      const outputExe = path.resolve(binDir, `${safeName}.exe`);
+      fs.writeFileSync(tempVoxFile, code, 'utf-8');
+
+      const startTime = Date.now();
+      let buildStdout = '';
+      let buildStderr = '';
+      let exitCode = 0;
+
+      await new Promise((resolve) => {
+        // Usa o CLI da Linguagem Vox: vox build <file.vox> -o <output.exe> --emit-c
+        const proc = spawn('node', [cliPath, 'build', tempVoxFile, '-o', outputExe], {
+          cwd: WORKSPACE_DIR,
+          env: process.env
+        });
+        proc.stdout.on('data', d => { buildStdout += d.toString(); });
+        proc.stderr.on('data', d => { buildStderr += d.toString(); });
+        proc.on('close', code => { exitCode = code; resolve(); });
+        proc.on('error', err => { buildStderr += err.message; resolve(); });
+      });
+
+      // Limpeza de arquivo temporário .vox
+      try { if (fs.existsSync(tempVoxFile)) fs.unlinkSync(tempVoxFile); } catch (_) {}
+      // Limpeza de arquivo intermediário .c gerado
+      const tempCFile = tempVoxFile.replace(/\.vox$/, '.c');
+      try { if (fs.existsSync(tempCFile)) fs.unlinkSync(tempCFile); } catch (_) {}
+
+      const durationMs = Date.now() - startTime;
+
+      if (exitCode !== 0) {
+        return sendJson(res, 200, {
+          ok: false,
+          phase: 'compile',
+          exitCode,
+          error: `Compilação falhou (código ${exitCode}):\n${buildStderr || buildStdout || 'Erro desconhecido.'}`,
+          output: buildStdout + buildStderr,
+          durationMs
+        });
+      }
+
+      const exeExists = fs.existsSync(outputExe);
+      const exeSize = exeExists ? fs.statSync(outputExe).size : 0;
+
+      // Execução opcional do binário gerado
+      let runOutput = null;
+      if (runAfterBuild && exeExists) {
+        await new Promise((resolve) => {
+          const runProc = spawn(outputExe, [], { cwd: binDir });
+          let rOut = '';
+          let rErr = '';
+          runProc.stdout.on('data', d => { rOut += d.toString(); });
+          runProc.stderr.on('data', d => { rErr += d.toString(); });
+          const timeout = setTimeout(() => {
+            try { runProc.kill(); } catch (_) {}
+            rOut += '\n[Timeout: execução encerrada após 10s]';
+            resolve();
+          }, 10000);
+          runProc.on('close', () => { clearTimeout(timeout); resolve(); });
+          runProc.on('error', err => { clearTimeout(timeout); rErr += err.message; resolve(); });
+          runOutput = () => (rOut + (rErr ? '\n[STDERR]: ' + rErr : '')).trim();
+        });
+        if (typeof runOutput === 'function') runOutput = runOutput();
+      }
+
+      return sendJson(res, 200, {
+        ok: true,
+        binaryName: `${safeName}.exe`,
+        localBinary: path.relative(WORKSPACE_DIR, outputExe).replace(/\\/g, '/'),
+        exeSize,
+        compileOutput: (buildStdout + buildStderr).trim() || `Compilado com sucesso (${durationMs}ms)`,
+        runOutput,
+        durationMs
+      });
+    } catch (err) {
+      return sendJson(res, 500, { ok: false, error: err.message });
     }
   }
 

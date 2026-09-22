@@ -1,7 +1,88 @@
 {
   "name": "Form1",
-  "title": "Form1",
-  "width": 700,
+  "title": "Sistema ERP — Menu Lateral",
+  "width": 720,
   "height": 480,
-  "components": []
+  "components": [
+    {
+      "id": "comp_side_menu",
+      "name": "vox_MainMenu1",
+      "type": "vox_MainMenu",
+      "left": 0,
+      "top": 0,
+      "width": 180,
+      "height": 450,
+      "props": {
+        "Layout": "Left",
+        "Title": "Meu ERP Vox",
+        "Items": "Dashboard, Clientes, Vendas, Produtos, Relatórios, Ajustes"
+      }
+    },
+    {
+      "id": "comp_conn1",
+      "name": "vox_Connection1",
+      "type": "vox_Connection",
+      "left": 196,
+      "top": 12,
+      "width": 38,
+      "height": 38,
+      "props": {
+        "DriverName": "SQLite",
+        "Database": "clientes_vox.db",
+        "Connected": true
+      }
+    },
+    {
+      "id": "comp_qry1",
+      "name": "vox_Query1",
+      "type": "vox_Query",
+      "left": 242,
+      "top": 12,
+      "width": 38,
+      "height": 38,
+      "props": {
+        "Connection": "vox_Connection1",
+        "SQL": "SELECT id, nome, email, cidade, saldo FROM clientes",
+        "Active": true
+      }
+    },
+    {
+      "id": "comp_ds1",
+      "name": "vox_DataSource1",
+      "type": "vox_DataSource",
+      "left": 288,
+      "top": 12,
+      "width": 38,
+      "height": 38,
+      "props": {
+        "DataSet": "vox_Query1",
+        "AutoEdit": true
+      }
+    },
+    {
+      "id": "comp_nav1",
+      "name": "vox_DBNavigator1",
+      "type": "vox_DBNavigator",
+      "left": 345,
+      "top": 18,
+      "width": 230,
+      "height": 26,
+      "props": {
+        "DataSource": "vox_DataSource1"
+      }
+    },
+    {
+      "id": "comp_grid1",
+      "name": "vox_DBGrid1",
+      "type": "vox_DBGrid",
+      "left": 196,
+      "top": 60,
+      "width": 508,
+      "height": 405,
+      "props": {
+        "DataSource": "vox_DataSource1",
+        "Columns": "ID, Nome, Cidade, Saldo"
+      }
+    }
+  ]
 }

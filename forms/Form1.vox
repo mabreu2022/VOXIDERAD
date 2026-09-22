@@ -1,15 +1,98 @@
 // ==============================================================================
-// Form1.vox — Classe de Formulário RAD Gerada pelo Vox Studio
+// Form1.vox — Unidade RAD Gerada pelo Vox Studio
 // ==============================================================================
 
-class Form1 {
-    let mut width: int;
-    let mut height: int;
-    let mut title: str;
+import Vox_UI, Vox_Database, Vox_SysUtils;
 
-    new() {
-        this.title = "Form1";
-        this.width = 700;
-        this.height = 480;
+classe Form1 herda TVoxForm {
+private:
+    // ── Membros e Métodos Privados ──────────────────────────────────────────
+    var _initialized: bool;
+
+    private procedure LogInterno(msg: str) {
+        println("[DEBUG INTERNO] " + msg);
     }
+
+published:
+    // ── Propriedades e Componentes Publicados (Object Inspector) ─────────────
+    var width: int;
+    var height: int;
+    var title: str;
+    let mut vox_MainMenu1: TVoxMainMenu;
+    let mut vox_Connection1: TVoxConnection;
+    let mut vox_Query1: TVoxQuery;
+    let mut vox_DataSource1: TVoxDataSource;
+    let mut vox_DBNavigator1: TVoxDBNavigator;
+    let mut vox_DBGrid1: TVoxDBGrid;
+
+public:
+    // ── Construtor e Inicialização de Tela ────────────────────────────────────
+    new() {
+        this.title = "Sistema ERP — Menu Lateral";
+        this.width = 720;
+        this.height = 480;
+        this._initialized = true;
+
+        this.vox_MainMenu1 = new TVoxMainMenu();
+        this.vox_MainMenu1.left = 0;
+        this.vox_MainMenu1.top = 0;
+        this.vox_MainMenu1.width = 180;
+        this.vox_MainMenu1.height = 450;
+        this.vox_MainMenu1.layout = "Left";
+        this.vox_MainMenu1.items = "Dashboard, Clientes, Vendas, Produtos, Relatórios, Ajustes";
+        this.vox_MainMenu1.title = "Meu ERP Vox";
+
+        this.vox_Connection1 = new TVoxConnection();
+        this.vox_Connection1.left = 196;
+        this.vox_Connection1.top = 12;
+        this.vox_Connection1.width = 38;
+        this.vox_Connection1.height = 38;
+        this.vox_Connection1.driverName = "SQLite";
+        this.vox_Connection1.database = "clientes_vox.db";
+        this.vox_Connection1.connected = true;
+
+        this.vox_Query1 = new TVoxQuery();
+        this.vox_Query1.left = 242;
+        this.vox_Query1.top = 12;
+        this.vox_Query1.width = 38;
+        this.vox_Query1.height = 38;
+        this.vox_Query1.connection = "vox_Connection1";
+        this.vox_Query1.sql = "SELECT id, nome, email, cidade, saldo FROM clientes";
+        this.vox_Query1.active = true;
+
+        this.vox_DataSource1 = new TVoxDataSource();
+        this.vox_DataSource1.left = 288;
+        this.vox_DataSource1.top = 12;
+        this.vox_DataSource1.width = 38;
+        this.vox_DataSource1.height = 38;
+        this.vox_DataSource1.dataSet = "vox_Query1";
+
+        this.vox_DBNavigator1 = new TVoxDBNavigator();
+        this.vox_DBNavigator1.left = 345;
+        this.vox_DBNavigator1.top = 18;
+        this.vox_DBNavigator1.width = 230;
+        this.vox_DBNavigator1.height = 26;
+        this.vox_DBNavigator1.dataSource = "vox_DataSource1";
+
+        this.vox_DBGrid1 = new TVoxDBGrid();
+        this.vox_DBGrid1.left = 196;
+        this.vox_DBGrid1.top = 60;
+        this.vox_DBGrid1.width = 508;
+        this.vox_DBGrid1.height = 405;
+        this.vox_DBGrid1.dataSource = "vox_DataSource1";
+
+        println("Formulário " + this.title + " inicializado no Vox Studio.");
+    }
+
+
+    // Tratador de Evento Publicado: Form1 -> OnCreate
+    public procedure FormCreate(sender: any) {
+        println("Formulário Form1 carregado com sucesso!");
+    }
+}
+
+// ── Ponto de Entrada para Execução Standalone ─────────────────────────────────
+public fn main() -> void {
+    let app = new Form1();
+    println("Janela ativa: " + app.title + " [" + str(app.width) + "x" + str(app.height) + "]");
 }

@@ -316,10 +316,66 @@
       document.head.appendChild(styleEl);
     }
 
+    renderNavBar(activeModule) {
+      const modules = [
+        { id: 'cadastros',     label: 'Cadastros',           icon: '📋' },
+        { id: 'fiscal',        label: 'Fiscal (NF-e/NFC-e)', icon: '📄' },
+        { id: 'estoque',       label: 'Estoque',              icon: '📦' },
+        { id: 'pdv',           label: 'PDV Caixa',            icon: '🛒' },
+        { id: 'financeiro',    label: 'Financeiro',           icon: '💰' },
+        { id: 'configuracoes', label: 'Configurações',        icon: '⚙️' }
+      ];
+      const items = modules.map(m => {
+        const isActive = m.id === activeModule;
+        return `<button
+          onclick="voxERPEngine.switchModule('${m.id}')"
+          style="
+            background: ${isActive ? '#0ea5e9' : 'transparent'};
+            color: ${isActive ? '#fff' : '#94a3b8'};
+            border: none;
+            padding: 0 14px;
+            height: 100%;
+            font-size: 12px;
+            font-weight: ${isActive ? '700' : '500'};
+            cursor: pointer;
+            border-radius: 0;
+            border-bottom: ${isActive ? '2px solid #38bdf8' : '2px solid transparent'};
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+          "
+          onmouseover="if(!${isActive})this.style.color='#e2e8f0'"
+          onmouseout="if(!${isActive})this.style.color='#94a3b8'"
+        >${m.icon} ${m.label}</button>`;
+      }).join('');
+
+      return `
+        <nav style="
+          display: flex;
+          align-items: center;
+          background: #111827;
+          border-bottom: 1px solid #1e2a3b;
+          height: 42px;
+          padding: 0 8px;
+          gap: 2px;
+          position: sticky;
+          top: 0;
+          z-index: 100;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        ">
+          <span style="font-size:13px; font-weight:700; color:#38bdf8; padding:0 12px 0 4px; border-right:1px solid #334155; margin-right:6px; white-space:nowrap;">🚀 Vox ERP</span>
+          ${items}
+        </nav>
+      `;
+    }
+
     switchModule(moduleName, targetCanvas) {
       console.log('[VoxERPEngine] Alternando módulo para:', moduleName);
       this.state.currentModule = moduleName;
 
+      // Atualiza destaque no menu original (topo da tela de cadastros)
       document.querySelectorAll('.web-topbar-item, .web-sidebar-item, .vcl-menu-top-item').forEach(el => {
         const txt = el.innerText || '';
         el.classList.remove('active');
@@ -338,36 +394,47 @@
       const canvas = targetCanvas || document.getElementById('webFormCanvas') || document.getElementById('delphiFormCanvas') || document.querySelector('.delphi-form-canvas') || document.querySelector('.form-canvas') || document.getElementById('live_form_body') || document.querySelector('.live-form-canvas') || document.body;
       if (!canvas) return;
 
+      // Se voltar para Cadastros: oculta o container overlay e mostra o form original
+      if (moduleName === 'cadastros') {
+        const existingContainer = document.getElementById('vox_erp_module_container');
+        if (existingContainer) existingContainer.style.display = 'none';
+        return;
+      }
+
       let modContainer = document.getElementById('vox_erp_module_container');
       if (!modContainer) {
         modContainer = document.createElement('div');
         modContainer.id = 'vox_erp_module_container';
-        modContainer.style.position = 'absolute';
-        modContainer.style.inset = '0';
-        modContainer.style.zIndex = '50';
-        modContainer.style.background = '#1e2430';
-        modContainer.style.overflow = 'auto';
+        modContainer.style.cssText = [
+          'position: absolute',
+          'top: 0', 'left: 0', 'right: 0', 'bottom: 0',
+          'z-index: 50',
+          'background: #1e2430',
+          'overflow-y: auto',
+          'display: flex',
+          'flex-direction: column'
+        ].join(';');
         canvas.style.position = 'relative';
         canvas.appendChild(modContainer);
       }
 
-      if (moduleName === 'cadastros') {
-        modContainer.style.display = 'none';
-        return;
+      modContainer.style.display = 'flex';
+      modContainer.style.flexDirection = 'column';
+
+      let moduleContent = '';
+      if (moduleName === 'fiscal') {
+        moduleContent = this.renderFiscalModule();
+      } else if (moduleName === 'estoque') {
+        moduleContent = this.renderEstoqueModule();
+      } else if (moduleName === 'pdv') {
+        moduleContent = this.renderPDVModule();
+      } else if (moduleName === 'financeiro') {
+        moduleContent = this.renderFinanceiroModule();
+      } else if (moduleName === 'configuracoes') {
+        moduleContent = this.renderConfiguracoesModule();
       }
 
-      modContainer.style.display = 'block';
-      if (moduleName === 'fiscal') {
-        modContainer.innerHTML = this.renderFiscalModule();
-      } else if (moduleName === 'estoque') {
-        modContainer.innerHTML = this.renderEstoqueModule();
-      } else if (moduleName === 'pdv') {
-        modContainer.innerHTML = this.renderPDVModule();
-      } else if (moduleName === 'financeiro') {
-        modContainer.innerHTML = this.renderFinanceiroModule();
-      } else if (moduleName === 'configuracoes') {
-        modContainer.innerHTML = this.renderConfiguracoesModule();
-      }
+      modContainer.innerHTML = this.renderNavBar(moduleName) + moduleContent;
     }
 
     renderFiscalModule() {

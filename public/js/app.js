@@ -31,6 +31,9 @@ class VoxStudioApp {
     this.currentOpenFileCategory = 'all';
     this.openFileSearchQuery = '';
     this.currentView = 'designer';
+    this.currentPlatform = 'web';
+    this.remoteProfiles = [];
+    this.activeRemoteProfile = null;
   }
 
   init() {
@@ -63,6 +66,7 @@ class VoxStudioApp {
     this.initTabs();
     this.initDockSplitters();
     this.checkServerStatus();
+    this.loadPlatformProfiles();
 
     // Sempre iniciar a IDE com um projeto e formulário em branco limpos (Padrão Delphi)
     this.initBlankProject();
@@ -2555,9 +2559,24 @@ class ${baseName} {
             <span>⚙️</span>
             <span>Build Configurations (Debug)</span>
           </div>
-          <div class="tree-node" style="padding-left: calc(${padLeft} + 16px); color: #64748b; font-size: 10px;">
+          <div class="tree-node" style="padding-left: calc(${padLeft} + 16px); color: #94a3b8; font-size: 10px; font-weight: 600;">
             <span>🎯</span>
-            <span>Target Platforms (Web HTML5)</span>
+            <span>Target Platforms</span>
+          </div>
+          <div class="tree-node ${this.currentPlatform === 'web' ? 'selected' : ''}" style="padding-left: calc(${padLeft} + 28px); cursor: pointer; font-size: 10px;" onclick="window.app.onPlatformChange('web')" title="Ativar Plataforma Web Browser (HTML5 + REST)">
+            <span>🌐</span>
+            <span style="color: ${this.currentPlatform === 'web' ? '#38bdf8' : '#94a3b8'};">Web HTML5 + REST ${this.currentPlatform === 'web' ? '✔' : ''}</span>
+          </div>
+          <div class="tree-node ${this.currentPlatform === 'linux' ? 'selected' : ''}" style="padding-left: calc(${padLeft} + 28px); cursor: pointer; font-size: 10px; display: flex; align-items: center; justify-content: space-between;" onclick="window.app.onPlatformChange('linux')" oncontextmenu="event.preventDefault(); window.app.openPlatformConfigModal();" title="Ativar Plataforma Linux 64-bit (Clique com o botão direito para configurar IP/SSH)">
+            <div>
+              <span>🐧</span>
+              <span style="color: ${this.currentPlatform === 'linux' ? '#38bdf8' : '#94a3b8'};">Linux 64-bit (${(this.activeRemoteProfile && this.activeRemoteProfile.host) || 'SSH'}) ${this.currentPlatform === 'linux' ? '✔' : ''}</span>
+            </div>
+            <span onclick="event.stopPropagation(); window.app.openPlatformConfigModal();" title="Configurar Conexão SSH / IP" style="margin-right: 8px; cursor: pointer; color: #38bdf8; font-size: 11px;">⚙️</span>
+          </div>
+          <div class="tree-node ${this.currentPlatform === 'windows' ? 'selected' : ''}" style="padding-left: calc(${padLeft} + 28px); cursor: pointer; font-size: 10px;" onclick="window.app.onPlatformChange('windows')" title="Ativar Plataforma Windows 64-bit EXE">
+            <span>🪟</span>
+            <span style="color: ${this.currentPlatform === 'windows' ? '#38bdf8' : '#94a3b8'};">Windows 64-bit EXE ${this.currentPlatform === 'windows' ? '✔' : ''}</span>
           </div>
         `;
 
@@ -4026,8 +4045,444 @@ class ${baseName} {
   }
 
   runApp() {
-    // Compila e executa o sistema Web diretamente no browser!
-    this.buildWebApp();
+    // Despacho inteligente por plataforma (Web / Linux Remoto / Windows)
+    if (this.currentPlatform === 'linux') {
+      this.buildRemoteLinux();
+    } else if (this.currentPlatform === 'windows') {
+      this.buildNativeWindows();
+    } else {
+      this.buildWebApp();
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // Gerenciamento de Plataformas e Perfis Remotos (Delphi Style)
+  // --------------------------------------------------------------------------
+  async loadPlatformProfiles() {
+    try {
+      const res = await fetch('/api/platform/profiles');
+      const data = await res.json();
+      this.remoteProfiles = data.profiles || [];
+      if (this.remoteProfiles.length > 0) {
+        this.activeRemoteProfile = this.remoteProfiles[0];
+      }
+      this.syncPlatformToolbar();
+    } catch (e) {
+      console.warn('Erro ao carregar perfis de plataforma:', e);
+    }
+  }
+
+  syncPlatformToolbar() {
+    const sel = document.getElementById('toolbarPlatformSelect');
+    if (sel && sel.value !== this.currentPlatform) {
+      sel.value = this.currentPlatform;
+    }
+    this.renderProjectTree();
+  }
+
+  onPlatformChange(newPlat) {
+    this.currentPlatform = newPlat;
+    const sel = document.getElementById('toolbarPlatformSelect');
+    if (sel && sel.value !== newPlat) {
+      sel.value = newPlat;
+    }
+    this.renderProjectTree();
+
+    const platNames = {
+      web: 'Web Browser (HTML5 + REST)',
+      linux: `Linux 64-bit (IP: ${(this.activeRemoteProfile && this.activeRemoteProfile.host) || '192.168.1.150'})`,
+      windows: 'Windows 64-bit (Native EXE)'
+    };
+
+    console.log(`[Target Platform Ativa] ${platNames[newPlat] || newPlat}`);
+  }
+
+  openPlatformConfigModal() {
+    const modal = document.getElementById('connectionProfileModal');
+    if (!modal) return;
+
+    const prof = this.activeRemoteProfile || (this.remoteProfiles && this.remoteProfiles[0]) || {
+      name: 'Linux Server (Ubuntu / Debian)',
+      host: '192.168.1.150',
+      port: 22,
+      user: 'ubuntu',
+      authType: 'password',
+      password: '',
+      privateKey: '',
+      remoteDir: '/tmp/vox_build',
+      compiler: 'gcc',
+      downloadBinary: true,
+      runAfterBuild: false
+    };
+
+    document.getElementById('profName').value = prof.name || 'Linux Server';
+    document.getElementById('profHost').value = prof.host || '192.168.1.150';
+    document.getElementById('profPort').value = prof.port || 22;
+    document.getElementById('profUser').value = prof.user || 'ubuntu';
+    document.getElementById('profAuthType').value = prof.authType || 'password';
+    document.getElementById('profPassword').value = prof.password || '';
+    document.getElementById('profKeyPath').value = prof.privateKey || '';
+    document.getElementById('profRemoteDir').value = prof.remoteDir || '/tmp/vox_build';
+    document.getElementById('profCompiler').value = prof.compiler || 'gcc';
+    document.getElementById('profDownloadBin').checked = prof.downloadBinary !== false;
+    document.getElementById('profRunAfter').checked = !!prof.runAfterBuild;
+
+    this.toggleAuthType(prof.authType || 'password');
+    const feedback = document.getElementById('connTestFeedback');
+    if (feedback) feedback.style.display = 'none';
+
+    modal.style.display = 'flex';
+  }
+
+  closePlatformConfigModal() {
+    const modal = document.getElementById('connectionProfileModal');
+    if (modal) modal.style.display = 'none';
+  }
+
+  toggleAuthType(type) {
+    const passGrp = document.getElementById('profPassGroup');
+    const keyGrp = document.getElementById('profKeyGroup');
+    if (passGrp) passGrp.style.display = (type === 'password') ? 'block' : 'none';
+    if (keyGrp) keyGrp.style.display = (type === 'key') ? 'block' : 'none';
+  }
+
+  async testRemoteLinuxConnection() {
+    const btn = document.getElementById('btnTestRemoteConn');
+    const feedback = document.getElementById('connTestFeedback');
+    if (!feedback) return;
+
+    const host = document.getElementById('profHost').value.trim();
+    const port = document.getElementById('profPort').value.trim();
+    const user = document.getElementById('profUser').value.trim();
+    const authType = document.getElementById('profAuthType').value;
+    const password = document.getElementById('profPassword').value;
+    const privateKey = document.getElementById('profKeyPath').value.trim();
+
+    if (!host) {
+      alert('Por favor informe o Host IP do servidor Linux.');
+      return;
+    }
+
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳</span> Conectando...';
+    }
+
+    feedback.style.display = 'block';
+    feedback.style.background = '#0f172a';
+    feedback.style.border = '1px solid #334155';
+    feedback.style.color = '#94a3b8';
+    feedback.innerHTML = `Conectando em <b>${user}@${host}:${port}</b> via SSH... Aguarde.`;
+
+    try {
+      const res = await fetch('/api/platform/remote-linux/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ host, port, user, authType, password, privateKey })
+      });
+      const data = await res.json();
+
+      if (data.ok) {
+        feedback.style.background = '#052e16';
+        feedback.style.border = '1px solid #15803d';
+        feedback.style.color = '#86efac';
+        feedback.innerHTML = `
+          <b>✔ Conexão Estabelecida com Sucesso! (Latência: ${data.latencyMs}ms)</b><br>
+          <b>SO Remoto:</b> ${data.os || 'Linux'}<br>
+          <b>Compilador C:</b> ${data.compiler || 'GCC Disponível'}
+        `;
+      } else {
+        feedback.style.background = '#450a0a';
+        feedback.style.border = '1px solid #b91c1c';
+        feedback.style.color = '#fca5a5';
+        feedback.innerHTML = `<b>❌ Falha na Conexão:</b> ${data.error || 'Não foi possível conectar ao IP especificado.'}`;
+      }
+    } catch (e) {
+      feedback.style.background = '#450a0a';
+      feedback.style.border = '1px solid #b91c1c';
+      feedback.style.color = '#fca5a5';
+      feedback.innerHTML = `<b>❌ Erro:</b> ${e.message}`;
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<span>🔌</span> Test Connection';
+      }
+    }
+  }
+
+  async savePlatformProfile() {
+    const profile = {
+      id: (this.activeRemoteProfile && this.activeRemoteProfile.id) || 'default_linux',
+      name: document.getElementById('profName').value.trim() || 'Linux Server',
+      platform: 'linux',
+      host: document.getElementById('profHost').value.trim() || '127.0.0.1',
+      port: parseInt(document.getElementById('profPort').value, 10) || 22,
+      user: document.getElementById('profUser').value.trim() || 'ubuntu',
+      authType: document.getElementById('profAuthType').value,
+      password: document.getElementById('profPassword').value,
+      privateKey: document.getElementById('profKeyPath').value.trim(),
+      remoteDir: document.getElementById('profRemoteDir').value.trim() || '/tmp/vox_build',
+      compiler: document.getElementById('profCompiler').value,
+      downloadBinary: document.getElementById('profDownloadBin').checked,
+      runAfterBuild: document.getElementById('profRunAfter').checked,
+      cflags: '-std=c99 -O2 -lm'
+    };
+
+    this.activeRemoteProfile = profile;
+    const existingIndex = this.remoteProfiles.findIndex(p => p.id === profile.id);
+    if (existingIndex >= 0) {
+      this.remoteProfiles[existingIndex] = profile;
+    } else {
+      this.remoteProfiles.push(profile);
+    }
+
+    try {
+      await fetch('/api/platform/profiles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profiles: this.remoteProfiles })
+      });
+      this.closePlatformConfigModal();
+      this.renderProjectTree();
+      alert(`✔ Perfil [${profile.name}] salvo com sucesso para o IP: ${profile.host}!`);
+    } catch (e) {
+      alert('Erro ao salvar perfil: ' + e.message);
+    }
+  }
+
+  async buildRemoteLinux() {
+    const modal = document.getElementById('remoteBuildModal');
+    const consoleEl = document.getElementById('remoteBuildConsole');
+    const badgeEl = document.getElementById('remoteBuildBadge');
+    const hostStatus = document.getElementById('remoteBuildHostStatus');
+    const localPathEl = document.getElementById('remoteBuildLocalPath');
+
+    const profile = this.activeRemoteProfile || (this.remoteProfiles && this.remoteProfiles[0]) || {
+      host: '192.168.1.150',
+      port: 22,
+      user: 'ubuntu',
+      authType: 'password',
+      remoteDir: '/tmp/vox_build',
+      compiler: 'gcc',
+      cflags: '-std=c99 -O2 -lm',
+      downloadBinary: true,
+      runAfterBuild: false
+    };
+
+    if (modal) modal.style.display = 'flex';
+    if (badgeEl) {
+      badgeEl.innerText = 'Compilando...';
+      badgeEl.style.background = '#0284c7';
+      badgeEl.style.color = '#ffffff';
+    }
+    if (hostStatus) {
+      hostStatus.innerText = `Servidor: ${profile.user}@${profile.host}:${profile.port} (${profile.remoteDir})`;
+    }
+    if (localPathEl) localPathEl.innerText = '';
+
+    const appendLog = (msg, color = '#cbd5e1') => {
+      if (consoleEl) {
+        const span = document.createElement('div');
+        span.style.color = color;
+        span.innerText = msg;
+        consoleEl.appendChild(span);
+        consoleEl.scrollTop = consoleEl.scrollHeight;
+      }
+    };
+
+    if (consoleEl) consoleEl.innerHTML = '';
+    appendLog(`[Remote Linux] Conectando ao host remoto ${profile.host}:${profile.port}...`, '#38bdf8');
+    appendLog(`[Transpiler] Transpilando código Vox para ANSI C99 intermediário...`, '#94a3b8');
+
+    try {
+      this.onFormChanged();
+    } catch (_) {}
+
+    const formName = (this.designer && this.designer.form && this.designer.form.name) || 'Form1';
+    const projName = (this.currentProject && this.currentProject.name) || formName;
+    const voxCode = this.editor ? this.editor.getCode() : (window.VoxCodeGen ? window.VoxCodeGen.generateVoxCode(this.designer.form) : '');
+
+    try {
+      appendLog(`[SSH/SFTP] Estabelecendo túnel SSH seguro e sessão SFTP...`, '#e0f2fe');
+
+      const res = await fetch('/api/platform/remote-linux/build', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: voxCode,
+          projectName: projName,
+          formName: formName,
+          profile: profile,
+          downloadBinary: profile.downloadBinary !== false,
+          runAfterBuild: !!profile.runAfterBuild
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.ok) {
+        appendLog(`[SFTP] Código C e vox_runtime.h transferidos com sucesso para ${profile.remoteDir}/`, '#22c55e');
+        appendLog(`[Remote GCC] Compilação nativa concluída em ${data.durationMs}ms com sucesso!`, '#38bdf8');
+        if (data.compileOutput) {
+          appendLog(data.compileOutput, '#a7f3d0');
+        }
+        if (data.localBinary) {
+          appendLog(`[Download] ✔ Binário ELF nativo Linux baixado com sucesso: ${data.localBinary}`, '#4ade80');
+          if (localPathEl) {
+            localPathEl.innerHTML = `✔ Binário salvo localmente em: <b>${data.localBinary}</b>`;
+          }
+        }
+        if (data.runOutput) {
+          appendLog(`\n[Remote Linux Execution Output]:\n${data.runOutput}`, '#fef08a');
+        }
+        if (badgeEl) {
+          badgeEl.innerText = 'Sucesso (✔)';
+          badgeEl.style.background = '#16a34a';
+        }
+      } else {
+        appendLog(`\n❌ [Falha - Fase: ${data.phase || 'build'}]: ${data.error}`, '#ef4444');
+        if (data.output) {
+          appendLog(data.output, '#f87171');
+        }
+        if (badgeEl) {
+          badgeEl.innerText = 'Falha';
+          badgeEl.style.background = '#dc2626';
+        }
+      }
+    } catch (err) {
+      appendLog(`❌ [Erro de Rede]: ${err.message}`, '#ef4444');
+      if (badgeEl) {
+        badgeEl.innerText = 'Erro';
+        badgeEl.style.background = '#dc2626';
+      }
+    }
+  }
+
+  closeRemoteBuildModal() {
+    const modal = document.getElementById('remoteBuildModal');
+    if (modal) modal.style.display = 'none';
+  }
+
+  async buildNativeWindows() {
+    const modal = document.getElementById('windowsBuildModal');
+    const consoleEl = document.getElementById('windowsBuildConsole');
+    const badgeEl = document.getElementById('windowsBuildBadge');
+    const infoEl = document.getElementById('windowsBuildInfo');
+    const localPathEl = document.getElementById('windowsBuildLocalPath');
+    const runBtn = document.getElementById('btnRunWindowsExe');
+
+    if (modal) modal.style.display = 'flex';
+    if (badgeEl) {
+      badgeEl.innerText = 'Compilando...';
+      badgeEl.style.background = '#0284c7';
+      badgeEl.style.color = '#ffffff';
+    }
+    if (infoEl) infoEl.innerText = 'Compilador: TCC embutido (padrão) / GCC / MSVC';
+    if (localPathEl) localPathEl.innerText = '';
+    if (runBtn) runBtn.style.display = 'none';
+    this._lastWindowsBinaryPath = null;
+
+    const appendLog = (msg, color = '#cbd5e1') => {
+      if (consoleEl) {
+        const div = document.createElement('div');
+        div.style.color = color;
+        div.innerText = msg;
+        consoleEl.appendChild(div);
+        consoleEl.scrollTop = consoleEl.scrollHeight;
+      }
+    };
+
+    if (consoleEl) consoleEl.innerHTML = '';
+    appendLog(`[Vox Build] Iniciando compilação nativa Windows 64-bit...`, '#38bdf8');
+    appendLog(`[Transpiler] Transpilando código Vox para ANSI C99 intermediário...`, '#94a3b8');
+
+    try { this.onFormChanged(); } catch (_) {}
+
+    const formName = (this.designer && this.designer.form && this.designer.form.name) || 'Form1';
+    const projName = (this.currentProject && this.currentProject.name) || formName;
+    const voxCode = this.editor
+      ? this.editor.getCode()
+      : (window.VoxCodeGen ? window.VoxCodeGen.generateVoxCode(this.designer.form) : '');
+
+    if (!voxCode || !voxCode.trim()) {
+      appendLog(`❌ [Erro] Nenhum código fonte encontrado. Abra um arquivo .vox ou crie código no editor.`, '#ef4444');
+      if (badgeEl) { badgeEl.innerText = 'Erro'; badgeEl.style.background = '#dc2626'; }
+      return;
+    }
+
+    appendLog(`[Build] Projeto: ${projName} | Saída: bin/windows/${projName.replace(/[^a-zA-Z0-9_-]/g, '_')}.exe`, '#e0f2fe');
+
+    try {
+      const res = await fetch('/api/platform/windows/build', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: voxCode,
+          projectName: projName,
+          formName: formName,
+          runAfterBuild: false
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.ok) {
+        const sizeKb = data.exeSize ? `${(data.exeSize / 1024).toFixed(1)} KB` : '';
+        appendLog(`[C99 → EXE] Transpilação e compilação concluídas em ${data.durationMs}ms!`, '#22c55e');
+        if (data.compileOutput) {
+          appendLog(data.compileOutput, '#a7f3d0');
+        }
+        appendLog(`[✔ Output] Executável gerado: ${data.localBinary}${sizeKb ? ` (${sizeKb})` : ''}`, '#4ade80');
+
+        if (badgeEl) {
+          badgeEl.innerText = 'Sucesso (✔)';
+          badgeEl.style.background = '#16a34a';
+        }
+        if (localPathEl) {
+          localPathEl.innerHTML = `✔ Binário salvo em: <b>${data.localBinary}</b>`;
+        }
+
+        this._lastWindowsBinaryPath = data.localBinary;
+        if (runBtn) runBtn.style.display = 'inline-flex';
+
+        if (data.runOutput) {
+          appendLog(`\n[Execução do Programa]:\n${data.runOutput}`, '#fef08a');
+        }
+      } else {
+        appendLog(`\n❌ [Falha - Fase: ${data.phase || 'compile'}]: ${data.error}`, '#ef4444');
+        if (data.output) {
+          appendLog(data.output, '#f87171');
+        }
+        appendLog(`\nDica: Verifique a sintaxe Vox no editor de código antes de compilar.`, '#fbbf24');
+        if (badgeEl) {
+          badgeEl.innerText = 'Falha';
+          badgeEl.style.background = '#dc2626';
+        }
+      }
+    } catch (err) {
+      appendLog(`❌ [Erro de Rede]: ${err.message}`, '#ef4444');
+      if (badgeEl) {
+        badgeEl.innerText = 'Erro';
+        badgeEl.style.background = '#dc2626';
+      }
+    }
+  }
+
+  closeWindowsBuildModal() {
+    const modal = document.getElementById('windowsBuildModal');
+    if (modal) modal.style.display = 'none';
+  }
+
+  async runWindowsExeDirectly() {
+    if (!this._lastWindowsBinaryPath) return;
+    try {
+      await fetch('/api/vox/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: '// run binary', formName: this._lastWindowsBinaryPath })
+      });
+    } catch (_) {}
+    alert(`Para executar o binário nativo, navegue até bin/windows/ e execute ${this._lastWindowsBinaryPath} no Prompt de Comando.`);
   }
 
   // --------------------------------------------------------------------------

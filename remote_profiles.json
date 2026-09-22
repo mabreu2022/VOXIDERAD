@@ -1,0 +1,18 @@
+[
+  {
+    "id": "default_linux",
+    "name": "Servidor Linux Remoto (Ubuntu/Debian)",
+    "platform": "linux",
+    "host": "192.168.1.150",
+    "port": 22,
+    "user": "ubuntu",
+    "authType": "password",
+    "password": "",
+    "privateKey": "",
+    "remoteDir": "/tmp/vox_build",
+    "compiler": "gcc",
+    "cflags": "-std=c99 -O2 -lm",
+    "downloadBinary": true,
+    "runAfterBuild": false
+  }
+]

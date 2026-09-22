@@ -1,0 +1,183 @@
+{
+  "name": "FormLacosBanco",
+  "title": "Laços de Repetição com Banco de Dados (While & For..in)",
+  "width": 820,
+  "height": 592,
+  "components": [
+    {
+      "id": "c_lacos_conn",
+      "name": "vox_Connection1",
+      "type": "vox_Connection",
+      "left": 16,
+      "top": 12,
+      "width": 46,
+      "height": 46,
+      "props": {
+        "DriverName": "SQLite",
+        "Database": "clientes_vox.db",
+        "Connected": true
+      }
+    },
+    {
+      "id": "c_lacos_query",
+      "name": "vox_Query1",
+      "type": "vox_Query",
+      "left": 70,
+      "top": 12,
+      "width": 46,
+      "height": 46,
+      "props": {
+        "Connection": "vox_Connection1",
+        "SQL": "SELECT id, nome, cidade, saldo FROM clientes ORDER BY id ASC;",
+        "Active": true
+      }
+    },
+    {
+      "id": "c_lacos_ds",
+      "name": "vox_DataSource1",
+      "type": "vox_DataSource",
+      "left": 124,
+      "top": 12,
+      "width": 46,
+      "height": 46,
+      "props": {
+        "DataSet": "vox_Query1"
+      }
+    },
+    {
+      "id": "c_lacos_gb_ops",
+      "name": "vox_GroupBox1",
+      "type": "vox_GroupBox",
+      "left": 16,
+      "top": 62,
+      "width": 788,
+      "height": 85,
+      "props": {
+        "Caption": " Escolha a Estrutura de Laço para Executar no Banco de Dados "
+      }
+    },
+    {
+      "id": "c_btn_while_eof",
+      "name": "btnWhileEof",
+      "type": "vox_Button",
+      "left": 32,
+      "top": 92,
+      "width": 175,
+      "height": 38,
+      "props": {
+        "Caption": "▶ Laço While (!Query.Eof)"
+      },
+      "events": {
+        "OnClick": "btnWhileEofClick"
+      },
+      "eventBodies": {
+        "OnClick": "        // 1. LAÇO WHILE COM CURSOR DATASET (ESTILO DELPHI)\n        this.memoLog.lines.add(\"═════════════════════════════════════════════════\");\n        this.memoLog.lines.add(\"▶ INICIANDO: While !Query.eof() com Avanço .next()\");\n        this.memoLog.lines.add(\"═════════════════════════════════════════════════\");\n\n        this.vox_Query1.sql = \"SELECT id, nome, cidade, saldo FROM clientes ORDER BY id ASC;\";\n        this.vox_Query1.open();\n\n        let mut totalLidos: int = 0;\n        let mut somaTotal: float = 0.0;\n\n        // Laço While clássico: itera registro por registro até o fim da tabela\n        while !this.vox_Query1.eof() {\n            totalLidos = totalLidos + 1;\n            let id = this.vox_Query1.fieldByName(\"id\").asInt();\n            let nome = this.vox_Query1.fieldByName(\"nome\").asString();\n            let cidade = this.vox_Query1.fieldByName(\"cidade\").asString();\n            let saldo = this.vox_Query1.fieldByName(\"saldo\").asFloat();\n\n            somaTotal = somaTotal + saldo;\n\n            this.memoLog.lines.add(\"[\" + str(totalLidos) + \"] ID: \" + str(id) + \" | \" + nome + \" (\" + cidade + \") | Saldo: R$ \" + str(saldo));\n\n            // Avança o ponteiro do cursor para o próximo registro\n            this.vox_Query1.next();\n        }\n\n        this.vox_Query1.close();\n        this.memoLog.lines.add(\"✔️ Fim do laço While: \" + str(totalLidos) + \" registros lidos.\");\n        this.memoLog.lines.add(\"💰 Total acumulado: R$ \" + str(somaTotal) + \"\\n\");"
+      }
+    },
+    {
+      "id": "c_btn_for_in",
+      "name": "btnForIn",
+      "type": "vox_Button",
+      "left": 215,
+      "top": 92,
+      "width": 185,
+      "height": 38,
+      "props": {
+        "Caption": "⚡ Laço For..in (Array Records)"
+      },
+      "events": {
+        "OnClick": "btnForInClick"
+      },
+      "eventBodies": {
+        "OnClick": "        // 2. LAÇO FOR..IN COM CONSULTA RETORNANDO ARRAY DE REGISTROS\n        this.memoLog.lines.add(\"═════════════════════════════════════════════════\");\n        this.memoLog.lines.add(\"⚡ INICIANDO: For cliente in Array de Registros\");\n        this.memoLog.lines.add(\"═════════════════════════════════════════════════\");\n\n        // Executa a consulta e recebe diretamente uma lista iterável\n        let registros = sqlite_query(this.vox_Connection1.handle, \"SELECT id, nome, cidade, saldo FROM clientes WHERE saldo > 0;\");\n\n        // Laço For..in nativo do Vox\n        for cliente in registros {\n            let nome = str(cliente[\"nome\"]);\n            let saldo = float(cliente[\"saldo\"]);\n\n            if saldo >= 10000.0 {\n                this.memoLog.lines.add(\"💎 CLIENTE VIP: \" + nome + \" -> Saldo: R$ \" + str(saldo));\n            } else {\n                this.memoLog.lines.add(\"👤 CLIENTE REGULAR: \" + nome + \" -> Saldo: R$ \" + str(saldo));\n            }\n        }\n\n        this.memoLog.lines.add(\"✔️ Fim do laço For..in: \" + str(len(registros)) + \" registros processados!\\n\");"
+      }
+    },
+    {
+      "id": "c_btn_break_cont",
+      "name": "btnBreakContinue",
+      "type": "vox_Button",
+      "left": 408,
+      "top": 92,
+      "width": 195,
+      "height": 38,
+      "props": {
+        "Caption": "🛑 Laço com Break e Continue"
+      },
+      "events": {
+        "OnClick": "btnBreakContinueClick"
+      },
+      "eventBodies": {
+        "OnClick": "        // 3. LAÇO COM CONTROLE DE FLUXO (BREAK E CONTINUE)\n        this.memoLog.lines.add(\"═════════════════════════════════════════════════\");\n        this.memoLog.lines.add(\"🛑 INICIANDO: Laço com Controle de Fluxo\");\n        this.memoLog.lines.add(\"═════════════════════════════════════════════════\");\n\n        let clientes = sqlite_query(this.vox_Connection1.handle, \"SELECT id, nome, saldo FROM clientes;\");\n\n        for cli in clientes {\n            let saldo = float(cli[\"saldo\"]);\n            let nome = str(cli[\"nome\"]);\n\n            // 'continue': pula clientes com saldo menor ou igual a 1.000\n            if saldo <= 1000.0 {\n                this.memoLog.lines.add(\"⏭️ [CONTINUE] Ignorando \" + nome + \" (saldo baixo: R$ \" + str(saldo) + \")\");\n                continue;\n            }\n\n            // 'break': interrompe imediatamente ao encontrar saldo extraordinário (> 30.000)\n            if saldo >= 30000.0 {\n                this.memoLog.lines.add(\"🛑 [BREAK] Interrompendo laço! Localizado cliente com saldo > 30k: \" + nome);\n                break;\n            }\n\n            this.memoLog.lines.add(\"✔️ Registro aceito: \" + nome + \" (R$ \" + str(saldo) + \")\");\n        }\n        this.memoLog.lines.add(\"─────────────────────────────────────────────\\n\");"
+      }
+    },
+    {
+      "id": "c_btn_clear_log",
+      "name": "btnClearLog",
+      "type": "vox_Button",
+      "left": 611,
+      "top": 92,
+      "width": 175,
+      "height": 38,
+      "props": {
+        "Caption": "🧹 Limpar Console / Log"
+      },
+      "events": {
+        "OnClick": "btnClearLogClick"
+      },
+      "eventBodies": {
+        "OnClick": "        this.memoLog.lines.clear();\n        this.memoLog.lines.add(\"Console limpo. Selecione um dos laços acima para executar.\");"
+      }
+    },
+    {
+      "id": "c_lbl_grid",
+      "name": "vox_Label1",
+      "type": "vox_Label",
+      "left": 16,
+      "top": 156,
+      "width": 250,
+      "height": 18,
+      "props": {
+        "Caption": "📊 Registros na Tabela SQLite (DBGrid):",
+        "FontBold": true
+      }
+    },
+    {
+      "id": "c_lacos_grid",
+      "name": "vox_DBGrid1",
+      "type": "vox_DBGrid",
+      "left": 16,
+      "top": 178,
+      "width": 380,
+      "height": 360,
+      "props": {
+        "DataSource": "vox_DataSource1",
+        "Columns": "ID, Nome, Cidade, Saldo"
+      }
+    },
+    {
+      "id": "c_lbl_memo",
+      "name": "vox_Label2",
+      "type": "vox_Label",
+      "left": 412,
+      "top": 156,
+      "width": 250,
+      "height": 18,
+      "props": {
+        "Caption": "💻 Saída da Execução dos Laços (Memo):",
+        "FontBold": true
+      }
+    },
+    {
+      "id": "c_lacos_memo",
+      "name": "memoLog",
+      "type": "vox_Memo",
+      "left": 412,
+      "top": 178,
+      "width": 392,
+      "height": 360,
+      "props": {
+        "Text": "=== DEMONSTRAÇÃO DE LAÇOS (WHILE / FOR..IN) NO BANCO DE DADOS ===\\nClique em um dos botões acima para executar os laços passo a passo..."
+      }
+    }
+  ]
+}
