@@ -326,35 +326,40 @@ class VoxFormRunner {
       comp.type === 'TWebBrowser' ||
       comp.type === 'TEdgeBrowser'
     ) {
-      const url      = (comp.props.URL || '').trim();
-      const html     = comp.props.HTML || '';
-      const css      = comp.props.CSS  || '';
-      const js       = comp.props.JavaScript || '';
-      const ts       = comp.props.TypeScript  || '';
-      const useTS    = comp.props.UseTypeScript || ts.trim().length > 0;
-      const sandbox  = comp.props.Sandbox !== false;
-      const scrolls  = comp.props.ScrollBars !== false;
-      const allowFS  = comp.props.AllowFullscreen === true;
-
-      const sandboxAttr = sandbox
-        ? `sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox"`
-        : '';
-      const allowFSAttr = allowFS ? `allowfullscreen` : '';
+      const url     = (comp.props.URL || '').trim();
+      const html    = comp.props.HTML || '';
+      const css     = comp.props.CSS  || '';
+      const js      = comp.props.JavaScript || '';
+      const ts      = comp.props.TypeScript  || '';
+      const useTS   = comp.props.UseTypeScript || ts.trim().length > 0;
+      const scrolls = comp.props.ScrollBars !== false;
+      const allowFS = comp.props.AllowFullscreen === true;
       const scrollStyle = scrolls ? 'overflow:auto;' : 'overflow:hidden;';
+      const allowFSAttr = allowFS ? 'allowfullscreen' : '';
 
-      // URLs externas → proxy reverso (remove X-Frame-Options/CSP)
-      // Conteúdo inline → srcdoc direto
-      let iframeSrc = '';
-      let displayUrl = '';
+      let iframeAttrs = '';
+      let displayUrl  = '';
+
       if (url) {
-        const proxyUrl = `/api/webview/proxy?url=${encodeURIComponent(url)}`;
-        iframeSrc = `src="${proxyUrl}"`;
+        // ── Modo URL: carregar diretamente (sem proxy, sem sandbox)
+        // O browser gerencia HTTPS, cookies e segurança nativamente.
+        // Sites com X-Frame-Options mostrarão erro nativo do browser.
+        iframeAttrs = `
+          src="${url}"
+          referrerpolicy="no-referrer-when-downgrade"
+          ${allowFSAttr}
+        `;
         displayUrl = url;
       } else {
+        // ── Modo inline: HTML + CSS + JS/TS via srcdoc (sandbox seguro)
         const srcdoc = window.VoxWebViewManager
           ? window.VoxWebViewManager.buildSrcdoc(html, css, js, ts, useTS)
-          : `<!DOCTYPE html><html><head><style>${css}</style></head><body>${html}<script>${js}</script></body></html>`;
-        iframeSrc = `srcdoc="${srcdoc.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}"`;
+          : `<!DOCTYPE html><html><head><style>*{box-sizing:border-box}body{margin:0;font-family:sans-serif}${css}</style></head><body>${html}<script>${js}</script></body></html>`;
+        iframeAttrs = `
+          srcdoc="${srcdoc.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups"
+          ${allowFSAttr}
+        `;
         displayUrl = '(HTML/CSS/JS/TS Inline)';
       }
 
@@ -367,39 +372,47 @@ class VoxFormRunner {
           border-radius:3px;
           overflow:hidden;
         ">
-          <!-- Barra de navegação WebView -->
+          <!-- Barra de navegação estilo Chrome -->
           <div style="
-            height:30px; background:#f3f4f6;
+            height:32px; background:#f3f4f6;
             border-bottom:1px solid #e5e7eb;
-            display:flex; align-items:center; padding:0 6px; gap:6px; flex-shrink:0;
+            display:flex; align-items:center; padding:0 8px; gap:6px; flex-shrink:0;
           ">
-            <button style="background:transparent;border:none;color:#6b7280;cursor:pointer;font-size:13px;padding:0 4px;"
-              onclick="(function(){var f=document.getElementById('wvf_${comp.id}');if(f)f.contentWindow.history.back();})()"
-              title="Voltar">◀</button>
-            <button style="background:transparent;border:none;color:#6b7280;cursor:pointer;font-size:13px;padding:0 4px;"
-              onclick="(function(){var f=document.getElementById('wvf_${comp.id}');if(f)f.contentWindow.history.forward();})()"
-              title="Avançar">▶</button>
-            <button style="background:transparent;border:none;color:#6b7280;cursor:pointer;font-size:13px;padding:0 4px;"
-              onclick="(function(){var f=document.getElementById('wvf_${comp.id}');if(f)f.src=f.src;})()"
-              title="Recarregar">🔄</button>
+            <button style="background:transparent;border:none;color:#6b7280;cursor:pointer;font-size:14px;padding:2px 5px;border-radius:4px;"
+              onmouseenter="this.style.background='#e5e7eb'"
+              onmouseleave="this.style.background='transparent'"
+              onclick="(function(){var f=document.getElementById('wvf_${comp.id}');if(f&&f.contentWindow)f.contentWindow.history.back();})()"
+              title="Voltar">←</button>
+            <button style="background:transparent;border:none;color:#6b7280;cursor:pointer;font-size:14px;padding:2px 5px;border-radius:4px;"
+              onmouseenter="this.style.background='#e5e7eb'"
+              onmouseleave="this.style.background='transparent'"
+              onclick="(function(){var f=document.getElementById('wvf_${comp.id}');if(f&&f.contentWindow)f.contentWindow.history.forward();})()"
+              title="Avançar">→</button>
+            <button style="background:transparent;border:none;color:#6b7280;cursor:pointer;font-size:14px;padding:2px 5px;border-radius:4px;"
+              onmouseenter="this.style.background='#e5e7eb'"
+              onmouseleave="this.style.background='transparent'"
+              onclick="(function(){var f=document.getElementById('wvf_${comp.id}');if(f){f.src=f.src;}})()"
+              title="Recarregar">↺</button>
             <div style="
-              flex:1; background:#ffffff; border:1px solid #d1d5db; border-radius:12px;
-              padding:2px 10px; font-size:11px; color:#374151; font-family:monospace;
+              flex:1; background:#fff; border:1px solid #d1d5db; border-radius:16px;
+              padding:3px 12px; font-size:11px; color:#374151; font-family:monospace;
               overflow:hidden; white-space:nowrap; text-overflow:ellipsis;
+              cursor:default; user-select:text;
             " title="${displayUrl}">${displayUrl}</div>
-            <span style="font-size:9px;color:#fff;font-weight:700;background:#0284c7;padding:1px 6px;border-radius:2px;white-space:nowrap;">
+            <span style="font-size:9px;color:#fff;font-weight:700;background:#0284c7;
+              padding:2px 7px;border-radius:10px;white-space:nowrap;">
               🌐 WebView
             </span>
           </div>
-          <!-- Iframe de conteúdo -->
-          <div style="flex:1;${scrollStyle}position:relative;">
+          <!-- Área do iframe -->
+          <div style="flex:1;${scrollStyle}position:relative;background:#fff;">
             <iframe
               id="wvf_${comp.id}"
-              ${iframeSrc}
-              ${sandboxAttr}
-              ${allowFSAttr}
+              ${iframeAttrs}
               style="width:100%;height:100%;border:none;display:block;"
-              loading="eager"
+              loading="lazy"
+              onload="this.style.opacity='1'"
+              style="opacity:0;transition:opacity 0.3s;width:100%;height:100%;border:none;display:block;"
             ></iframe>
           </div>
         </div>
