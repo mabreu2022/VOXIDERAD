@@ -132,6 +132,19 @@ window.VoxCodeGen = {
       if (comp.props.LookupSource !== undefined) {
         initLines.push(`        this.${comp.name}.lookupSource = "${comp.props.LookupSource}";`);
       }
+      // --- TVoxWebView: URL, HTML, CSS, JavaScript, TypeScript ---
+      if (comp.type === 'vox_WebView' || comp.type === 'TVoxWebView' || comp.type === 'TWebBrowser' || comp.type === 'TEdgeBrowser') {
+        if (comp.props.URL)    initLines.push(`        this.${comp.name}.url = "${(comp.props.URL||'').replace(/"/g,'\\"')}";`);
+        if (comp.props.HTML)   initLines.push(`        this.${comp.name}.html = """${comp.props.HTML}""";`);
+        if (comp.props.CSS)    initLines.push(`        this.${comp.name}.css = """${comp.props.CSS}""";`);
+        if (comp.props.JavaScript) initLines.push(`        this.${comp.name}.javascript = """${comp.props.JavaScript}""";`);
+        if (comp.props.TypeScript) initLines.push(`        this.${comp.name}.typeScript = """${comp.props.TypeScript}""";`);
+        if (comp.props.UseTypeScript !== undefined) initLines.push(`        this.${comp.name}.useTypeScript = ${comp.props.UseTypeScript};`);
+        if (comp.props.Sandbox !== undefined)       initLines.push(`        this.${comp.name}.sandbox = ${comp.props.Sandbox};`);
+        if (comp.props.AllowFullscreen !== undefined) initLines.push(`        this.${comp.name}.allowFullscreen = ${comp.props.AllowFullscreen};`);
+        if (comp.props.ScrollBars !== undefined)    initLines.push(`        this.${comp.name}.scrollBars = ${comp.props.ScrollBars};`);
+        if (comp.props.ZoomFactor !== undefined)    initLines.push(`        this.${comp.name}.zoomFactor = ${comp.props.ZoomFactor};`);
+      }
       if (comp.props.EditMask !== undefined) {
         initLines.push(`        this.${comp.name}.editMask = "${comp.props.EditMask}";`);
       }

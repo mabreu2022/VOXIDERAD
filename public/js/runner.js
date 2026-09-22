@@ -317,6 +317,94 @@ class VoxFormRunner {
       `;
     }
 
+    // ------------------------------------------------------------------
+    // TVoxWebView — WebBrowser nativo com HTML5 + CSS + JS + TypeScript
+    // ------------------------------------------------------------------
+    if (
+      comp.type === 'vox_WebView' ||
+      comp.type === 'TVoxWebView' ||
+      comp.type === 'TWebBrowser' ||
+      comp.type === 'TEdgeBrowser'
+    ) {
+      const url      = (comp.props.URL || '').trim();
+      const html     = comp.props.HTML || '';
+      const css      = comp.props.CSS  || '';
+      const js       = comp.props.JavaScript || '';
+      const ts       = comp.props.TypeScript  || '';
+      const useTS    = comp.props.UseTypeScript || ts.trim().length > 0;
+      const sandbox  = comp.props.Sandbox !== false;
+      const scrolls  = comp.props.ScrollBars !== false;
+      const allowFS  = comp.props.AllowFullscreen === true;
+
+      // Construir srcdoc via VoxWebViewManager se disponível
+      let srcdoc = '';
+      if (window.VoxWebViewManager) {
+        srcdoc = window.VoxWebViewManager.buildSrcdoc(html, css, js, ts, useTS);
+      } else {
+        srcdoc = `<!DOCTYPE html><html><head><style>${css}</style></head><body>${html}<script>${js}</script></body></html>`;
+      }
+
+      const sandboxAttr = sandbox
+        ? `sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups"`
+        : '';
+      const allowFSAttr = allowFS ? `allowfullscreen` : '';
+      const scrollStyle = scrolls ? 'overflow:auto;' : 'overflow:hidden;';
+
+      const iframeSrc = url
+        ? `src="${url}"`
+        : `srcdoc="${srcdoc.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}"`;
+
+      // Barra de endereço navegável
+      const displayUrl = url || '(HTML/CSS/JS/TS Inline)';
+
+      return `
+        <div id="live_${comp.id}" style="
+          width:100%; height:100%;
+          display:flex; flex-direction:column;
+          background:#0f172a;
+          border:1px solid #334155;
+          border-radius:3px;
+          overflow:hidden;
+        ">
+          <!-- Barra de navegação WebView -->
+          <div style="
+            height:30px; background:#1e2430;
+            border-bottom:1px solid #334155;
+            display:flex; align-items:center; padding:0 6px; gap:6px; flex-shrink:0;
+          ">
+            <button style="background:transparent;border:none;color:#94a3b8;cursor:pointer;font-size:13px;padding:0 4px;"
+              onclick="(function(){var f=document.getElementById('wvf_${comp.id}');if(f)f.contentWindow.history.back();})()"
+              title="Voltar">◀</button>
+            <button style="background:transparent;border:none;color:#94a3b8;cursor:pointer;font-size:13px;padding:0 4px;"
+              onclick="(function(){var f=document.getElementById('wvf_${comp.id}');if(f)f.contentWindow.history.forward();})()"
+              title="Avançar">▶</button>
+            <button style="background:transparent;border:none;color:#94a3b8;cursor:pointer;font-size:13px;padding:0 4px;"
+              onclick="(function(){var f=document.getElementById('wvf_${comp.id}');if(f)f.src=f.src;})()"
+              title="Recarregar">🔄</button>
+            <div style="
+              flex:1; background:#0f172a; border:1px solid #334155; border-radius:3px;
+              padding:2px 8px; font-size:10px; color:#94a3b8; font-family:monospace;
+              overflow:hidden; white-space:nowrap; text-overflow:ellipsis;
+            " title="${displayUrl}">${displayUrl}</div>
+            <span style="font-size:9px;color:#fff;font-weight:700;background:#0284c7;padding:1px 6px;border-radius:2px;white-space:nowrap;">
+              🌐 WebView
+            </span>
+          </div>
+          <!-- Iframe de conteúdo -->
+          <div style="flex:1;${scrollStyle}position:relative;">
+            <iframe
+              id="wvf_${comp.id}"
+              ${iframeSrc}
+              ${sandboxAttr}
+              ${allowFSAttr}
+              style="width:100%;height:100%;border:none;display:block;"
+              loading="eager"
+            ></iframe>
+          </div>
+        </div>
+      `;
+    }
+
     if (comp.type === 'vox_PageControl' || comp.type === 'TPageControl') {
       const pages = (this.currentFormState && this.currentFormState.components || []).filter(c =>
         (c.type === 'vox_TabSheet' || c.type === 'TTabSheet') && c.parent === comp.name

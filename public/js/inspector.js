@@ -349,6 +349,36 @@ class VoxObjectInspector {
       `;
     }
 
+    // Banner dedicado para TVoxWebView
+    if (this.target && (
+      this.target.type === 'vox_WebView' ||
+      this.target.type === 'TVoxWebView' ||
+      this.target.type === 'TWebBrowser' ||
+      this.target.type === 'TEdgeBrowser'
+    )) {
+      const hasContent = (this.target.props.HTML || '').trim().length > 0 ||
+                         (this.target.props.TypeScript || '').trim().length > 0 ||
+                         (this.target.props.JavaScript || '').trim().length > 0;
+      const hasTS = (this.target.props.TypeScript || '').trim().length > 0;
+      headerBanner = `
+        <div style="padding: 6px 8px; background: rgba(2, 132, 199, 0.18); border-bottom: 1px solid #0284c7; display: flex; flex-direction: column; gap: 5px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size: 11px; font-weight: 700; color: #38bdf8;">🌐 TVoxWebView</span>
+            <span style="font-size: 9px; color: #64748b;">${hasTS ? '🔷 TypeScript' : '📜 JavaScript'} ${hasContent ? '• Com conteúdo' : '• Vazio'}</span>
+          </div>
+          <div style="display:flex; gap:5px;">
+            <button class="tool-btn btn-run-delphi" style="flex:1; padding: 4px 6px; font-size: 11px; font-weight:600;"
+              onclick="window.VoxWebViewManager && window.VoxWebViewManager.openEditor('${this.target.id}')">
+              ✏️ Editar Conteúdo
+            </button>
+            <button class="tool-btn" style="padding: 4px 8px; font-size: 11px;"
+              onclick="(function(){var comp=window.app.designer.form.components.find(c=>c.id==='${this.target.id}');if(comp){var f=document.querySelector('#wvf_'+comp.id);if(f){f.srcdoc=f.srcdoc;}else{window.app.showToast('Execute F9 para ver o preview ao vivo.');}}})()"
+              title="Recarregar preview">🔄</button>
+          </div>
+        </div>
+      `;
+    }
+
     const publishedBadge = `
       <div style="padding: 4px 8px; background: rgba(56, 189, 248, 0.08); font-size: 10px; color: #94a3b8; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between; align-items: center;">
         <span>Seção: <span style="color: #38bdf8; font-weight: 600; font-family: monospace;">published:</span></span>

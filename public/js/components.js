@@ -2272,6 +2272,105 @@ window.VOX_COMPONENTS['TVoxReportShape'] = window.VOX_COMPONENTS['vox_ReportShap
 window.VOX_COMPONENTS['TQRImage'] = window.VOX_COMPONENTS['vox_ReportImage'];
 window.VOX_COMPONENTS['TVoxReportImage'] = window.VOX_COMPONENTS['vox_ReportImage'];
 
+// --------------------------------------------------------------------------
+// INTERNET — TVoxWebView (WebBrowser/TEdgeBrowser — HTML5 + CSS + JS + TS)
+// --------------------------------------------------------------------------
+window.VOX_COMPONENTS['vox_WebView'] = {
+  name: 'vox_WebView',
+  className: 'TVoxWebView',
+  category: 'Internet',
+  label: 'vox_WebView',
+  icon: '🌐',
+  defaultWidth: 400,
+  defaultHeight: 300,
+  defaultProps: {
+    URL: '',
+    HTML: '<h2 style="color:#38bdf8;font-family:sans-serif;padding:16px;">Olá do TVoxWebView! 🌐</h2>\n<p style="font-family:sans-serif;padding:0 16px;color:#64748b;">Edite o conteúdo HTML, CSS, JavaScript ou TypeScript\nem ✏️ Editar Conteúdo no Object Inspector.</p>',
+    CSS: 'body { background: #0f172a; } h2 { margin-top: 24px; }',
+    JavaScript: '',
+    TypeScript: '',
+    UseTypeScript: false,
+    Sandbox: true,
+    AllowFullscreen: false,
+    ScrollBars: true,
+    BorderStyle: 'bsSingle',
+    ZoomFactor: 100
+  },
+  events: ['OnNavigate', 'OnLoad', 'OnError', 'OnMessage'],
+  render(comp) {
+    const url = comp.props.URL || '';
+    const html = comp.props.HTML || '';
+    const css  = comp.props.CSS  || '';
+    const label = url ? url : '(HTML/CSS/JS/TS Inline)';
+    const hasContent = url || html.trim();
+
+    // No designer: mostrar preview estilizado com badge
+    return `
+      <div style="
+        width: 100%; height: 100%;
+        background: #0f172a;
+        border: 1px solid #334155;
+        border-radius: 4px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        position: relative;
+      ">
+        <!-- Barra de endereço estilo browser -->
+        <div style="
+          height: 28px;
+          background: #1e2430;
+          border-bottom: 1px solid #334155;
+          display: flex;
+          align-items: center;
+          padding: 0 8px;
+          gap: 6px;
+          flex-shrink: 0;
+        ">
+          <span style="font-size:10px;">🌐</span>
+          <div style="
+            flex: 1;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 3px;
+            padding: 2px 8px;
+            font-size: 10px;
+            color: #94a3b8;
+            font-family: monospace;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+          ">${label || 'about:blank'}</div>
+          <span style="font-size:9px;color:#38bdf8;font-weight:700;background:#0284c7;padding:1px 5px;border-radius:2px;">TVoxWebView</span>
+        </div>
+        <!-- Área de conteúdo -->
+        <div style="flex:1; overflow:hidden; position:relative;">
+          ${hasContent ? `<iframe
+            style="width:100%;height:100%;border:none;pointer-events:none;"
+            srcdoc="${(html + '<style>' + css + '</style>').replace(/"/g, '&quot;')}"
+            sandbox="allow-scripts"
+          ></iframe>` : `
+          <div style="
+            width:100%;height:100%;
+            display:flex;flex-direction:column;
+            align-items:center;justify-content:center;
+            color:#334155;gap:6px;
+          ">
+            <span style="font-size:28px;">🌐</span>
+            <span style="font-size:11px;font-family:sans-serif;">TVoxWebView</span>
+            <span style="font-size:10px;color:#475569;">Clique em ✏️ Editar Conteúdo no Inspector</span>
+          </div>`}
+        </div>
+      </div>
+    `;
+  }
+};
+
+// Aliases Delphi-style
+window.VOX_COMPONENTS['TVoxWebView']  = window.VOX_COMPONENTS['vox_WebView'];
+window.VOX_COMPONENTS['TWebBrowser']  = window.VOX_COMPONENTS['vox_WebView'];
+window.VOX_COMPONENTS['TEdgeBrowser'] = window.VOX_COMPONENTS['vox_WebView'];
+
 
 // Função para registrar novos componentes criados pela Fábrica de Componentes (Component Factory)
 window.registerCustomComponent = function(compDef) {
