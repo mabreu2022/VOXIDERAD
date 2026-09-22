@@ -361,42 +361,47 @@ class VoxFormRunner {
         ">
           <!-- Barra de navegação estilo Chrome -->
           <div style="
-            height:32px; background:#f3f4f6;
+            height:36px; background:#f3f4f6;
             border-bottom:1px solid #e5e7eb;
-            display:flex; align-items:center; padding:0 8px; gap:6px; flex-shrink:0;
+            display:flex; align-items:center; padding:0 6px; gap:4px; flex-shrink:0;
           ">
             <button style="background:transparent;border:none;color:#6b7280;cursor:pointer;font-size:14px;padding:2px 5px;border-radius:4px;"
-              onmouseenter="this.style.background='#e5e7eb'"
-              onmouseleave="this.style.background='transparent'"
+              onmouseenter="this.style.background='#e5e7eb'" onmouseleave="this.style.background='transparent'"
               onclick="(function(){var f=document.getElementById('wvf_${comp.id}');if(f&&f.contentWindow)f.contentWindow.history.back();})()"
               title="Voltar">←</button>
             <button style="background:transparent;border:none;color:#6b7280;cursor:pointer;font-size:14px;padding:2px 5px;border-radius:4px;"
-              onmouseenter="this.style.background='#e5e7eb'"
-              onmouseleave="this.style.background='transparent'"
+              onmouseenter="this.style.background='#e5e7eb'" onmouseleave="this.style.background='transparent'"
               onclick="(function(){var f=document.getElementById('wvf_${comp.id}');if(f&&f.contentWindow)f.contentWindow.history.forward();})()"
               title="Avançar">→</button>
             <button style="background:transparent;border:none;color:#6b7280;cursor:pointer;font-size:14px;padding:2px 5px;border-radius:4px;"
-              onmouseenter="this.style.background='#e5e7eb'"
-              onmouseleave="this.style.background='transparent'"
+              onmouseenter="this.style.background='#e5e7eb'" onmouseleave="this.style.background='transparent'"
               onclick="(function(){var f=document.getElementById('wvf_${comp.id}');if(f){f.src=f.src;}})()"
               title="Recarregar">↺</button>
             <div style="
               flex:1; background:#fff; border:1px solid #d1d5db; border-radius:16px;
-              padding:3px 12px; font-size:11px; color:#374151; font-family:monospace;
-              overflow:hidden; white-space:nowrap; text-overflow:ellipsis;
-              cursor:default; user-select:text;
+              padding:3px 10px; font-size:11px; color:#374151; font-family:monospace;
+              overflow:hidden; white-space:nowrap; text-overflow:ellipsis; cursor:default;
             " title="${displayUrl}">${displayUrl}</div>
+            ${url ? `
+            <button id="wvnative_${comp.id}"
+              style="background:#0f766e;border:none;color:#fff;cursor:pointer;
+                font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;
+                white-space:nowrap;transition:background 0.2s;"
+              onmouseenter="this.style.background='#134e4a'"
+              onmouseleave="this.style.background='#0f766e'"
+              onclick="window.voxOpenNativeWebView(${JSON.stringify(url)})"
+              title="Abrir em janela nativa com WebView2 (sem restricoes de iframe)">
+              ⚡ WebView2
+            </button>` : ''}
             <span style="font-size:9px;color:#fff;font-weight:700;background:#0284c7;
-              padding:2px 7px;border-radius:10px;white-space:nowrap;">
-              🌐 WebView
-            </span>
+              padding:2px 7px;border-radius:10px;white-space:nowrap;">🌐 WebView</span>
           </div>
-          <!-- Área do iframe -->
+          <!-- Área do iframe (para sites que permitem embed) -->
           <div style="flex:1;${scrollStyle}position:relative;background:#fff;">
             <iframe
               id="wvf_${comp.id}"
               ${iframeAttrs}
-              style="width:100%;height:100%;border:none;display:block;opacity:1;transition:opacity 0.3s;"
+              style="width:100%;height:100%;border:none;display:block;"
               loading="lazy"
             ></iframe>
           </div>
@@ -848,3 +853,72 @@ class VoxFormRunner {
 }
 
 window.VoxFormRunner = VoxFormRunner;
+
+// ==============================================================================
+// Função Global: Abrir Janela Nativa Electron com WebView2
+// Carrega qualquer URL (UOL, Google, YouTube, etc.) sem restrições de iframe
+// ==============================================================================
+window.voxOpenNativeWebView = function(targetUrl) {
+  let formState = null;
+
+  if (window.app && window.app.runner && window.app.runner.currentFormState) {
+    formState = JSON.parse(JSON.stringify(window.app.runner.currentFormState));
+  } else if (window.app && window.app.designer && window.app.designer.form) {
+    formState = JSON.parse(JSON.stringify(window.app.designer.form));
+  } else {
+    formState = { name: 'Form1', title: 'Vox Studio Runner', width: 800, height: 600, components: [] };
+  }
+
+  if (!formState.components) formState.components = [];
+
+  if (targetUrl) {
+    let wvComp = formState.components.find(c => {
+      const t = (c.type || '').toLowerCase();
+      return t.includes('webview') || t.includes('webbrowser') || t.includes('edgebrowser');
+    });
+    if (wvComp) {
+      if (!wvComp.props) wvComp.props = {};
+      wvComp.props.URL = targetUrl;
+    } else {
+      formState.components.push({
+        id: 'wv_auto_' + Date.now(),
+        name: 'VoxWebView1',
+        type: 'TVoxWebView',
+        left: 0,
+        top: 0,
+        width: formState.width || 800,
+        height: formState.height || 600,
+        props: {
+          Align: 'alClient',
+          URL: targetUrl
+        }
+      });
+    }
+  }
+
+  if (window.app && window.app.showToast) {
+    window.app.showToast('🚀 Abrindo janela nativa Electron / WebView2...');
+  }
+
+  fetch('/api/runner/native', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ formState })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) {
+      console.log('[WebView2] Janela nativa aberta com sucesso! PID:', data.pid);
+      if (window.app && window.app.showToast) {
+        window.app.showToast('⚡ Janela nativa WebView2 aberta!');
+      }
+    } else {
+      console.error('[WebView2] Erro retornado pelo servidor:', data.error);
+      alert('Erro ao abrir janela nativa: ' + (data.error || 'Erro desconhecido'));
+    }
+  })
+  .catch(e => {
+    console.error('[WebView2] Falha na comunicação com o servidor:', e);
+    alert('Erro ao comunicar com o servidor: ' + e.message);
+  });
+};

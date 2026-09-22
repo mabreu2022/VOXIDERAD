@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vox Studio — Runner Nativo</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #e8eaed;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Titlebar da janela estilo Windows */
+    #titlebar {
+      height: 28px;
+      background: #ffffff;
+      border-bottom: 1px solid #d0d7de;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 10px;
+      flex-shrink: 0;
+      -webkit-app-region: drag;
+      user-select: none;
+    }
+    #titlebar-left { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 500; color: #1a1a1a; }
+    #titlebar-right { display: flex; gap: 6px; -webkit-app-region: no-drag; }
+    #titlebar-right button {
+      border: none; background: transparent; cursor: pointer;
+      padding: 2px 8px; border-radius: 3px; font-size: 12px; color: #555;
+    }
+    #titlebar-right button:hover { background: #f0f0f0; }
+    #btn-close:hover { background: #e81123 !important; color: white !important; }
+
+    /* Área de conteúdo do formulário */
+    #form-client {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background: #f4f6f8;
+    }
+
+    /* Estilo dos componentes */
+    .vox-comp {
+      position: absolute;
+      box-sizing: border-box;
+    }
+
+    /* WebView nativo via tag <webview> do Electron */
+    .vox-webview-container {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      background: #fff;
+      border: 1px solid #d1d5db;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .vox-webview-navbar {
+      height: 36px;
+      background: #f3f4f6;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .vox-webview-navbar button {
+      background: transparent; border: none; color: #6b7280;
+      cursor: pointer; font-size: 15px; padding: 2px 6px; border-radius: 4px;
+      line-height: 1;
+    }
+    .vox-webview-navbar button:hover { background: #e5e7eb; }
+    .vox-webview-urlbar {
+      flex: 1;
+      background: #fff;
+      border: 1px solid #d1d5db;
+      border-radius: 16px;
+      padding: 4px 12px;
+      font-size: 12px;
+      color: #374151;
+      font-family: monospace;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      outline: none;
+    }
+    .vox-webview-urlbar:focus { border-color: #0284c7; box-shadow: 0 0 0 2px rgba(2,132,199,0.2); }
+    .vox-webview-badge {
+      font-size: 9px; color: #fff; font-weight: 700;
+      background: #0284c7; padding: 2px 8px; border-radius: 10px; white-space: nowrap;
+    }
+    .vox-webview-body {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+    /* Tag webview do Electron — carrega qualquer URL sem restricoes */
+    webview {
+      width: 100%;
+      height: 100%;
+      display: block;
+      border: none;
+    }
+
+    /* Loading spinner */
+    .loading-overlay {
+      position: absolute; inset: 0;
+      background: rgba(255,255,255,0.9);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 12px; z-index: 10;
+      font-size: 13px; color: #6b7280;
+    }
+    .spinner {
+      width: 28px; height: 28px;
+      border: 3px solid #e5e7eb;
+      border-top-color: #0284c7;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <!-- Titlebar -->
+  <div id="titlebar">
+    <div id="titlebar-left">
+      <span>🔷</span>
+      <span id="form-title">Vox Studio Runner</span>
+    </div>
+    <div id="titlebar-right">
+      <button title="Minimizar" onclick="window.electronAPI && window.electronAPI.minimizeForm()">🗕</button>
+      <button title="Maximizar" onclick="window.electronAPI && window.electronAPI.maximizeForm()">🗖</button>
+      <button id="btn-close" title="Fechar" onclick="window.electronAPI && window.electronAPI.closeForm()">✕</button>
+    </div>
+  </div>
+
+  <!-- Área do formulário -->
+  <div id="form-client">
+    <div class="loading-overlay" id="loading">
+      <div class="spinner"></div>
+      <span>Carregando formulário...</span>
+    </div>
+  </div>
+
+  <script>
+    // ==========================================================================
+    // Vox Studio — Electron Runner Renderer
+    // Renderiza o formulário completo com WebView nativo (sem restricoes iframe)
+    // ==========================================================================
+
+    // Lê o formState da query string
+    function getParam(name) {
+      const url = new URL(window.location.href);
+      return url.searchParams.get(name);
+    }
+
+    const stateJson = getParam('state');
+    const serverPort = getParam('port') || '4500';
+    let formState = null;
+
+    if (stateJson) {
+      try {
+        formState = JSON.parse(decodeURIComponent(stateJson));
+      } catch (e) {
+        console.warn('[ElectronRunner] Erro ao parsear state do query param:', e);
+      }
+    }
+
+    if (formState) {
+      renderForm(formState);
+    } else {
+      // Busca formState atualizado do servidor
+      fetch('/api/runner/state')
+        .then(r => r.json())
+        .then(data => {
+          if (data && data.ok && data.formState) {
+            formState = data.formState;
+            renderForm(formState);
+          } else {
+            document.getElementById('loading').innerHTML = '<span style="color:red">Erro: Nenhum formState recebido</span>';
+          }
+        })
+        .catch(err => {
+          document.getElementById('loading').innerHTML = '<span style="color:red">Erro de conexão: ' + err.message + '</span>';
+        });
+    }
+
+    function renderForm(fs) {
+      const titleEl = document.getElementById('form-title');
+      if (titleEl) titleEl.textContent = fs.title || fs.name || 'Form1';
+
+      const clientEl = document.getElementById('form-client');
+      clientEl.style.background = fs.color || '#f4f6f8';
+
+      // Calcula alinhamentos
+      const comps = computeAlignments(fs.components || [], fs.width || 800, fs.height || 600);
+
+      // Renderiza componentes
+      const nonVisual = ['vox_DataSource','vox_Connection','vox_Query','vox_Timer',
+        'TVoxDataSource','TVoxConnection','TVoxQuery','TVoxTimer',
+        'TDataSource','TFDConnection','TFDQuery','TTimer'];
+
+      const htmlParts = comps
+        .filter(c => !nonVisual.includes(c.type))
+        .map(c => renderComponent(c, comps))
+        .join('\n');
+
+      clientEl.innerHTML = htmlParts;
+
+      // Inicializa webviews após inserção no DOM
+      document.querySelectorAll('webview').forEach(initWebview);
+
+      // Remove loading
+      const loading = document.getElementById('loading');
+      if (loading) loading.remove();
+    }
+
+    // ── Renderiza um componente individual
+    function renderComponent(comp, allComps) {
+      const style = `position:absolute;left:${comp.left}px;top:${comp.top}px;width:${comp.width}px;height:${comp.height}px;`;
+      const p = comp.props || {};
+      const type = (comp.type || '').toLowerCase();
+
+      if (type.includes('webview') || type.includes('webbrowser') || type.includes('edgebrowser')) {
+        return renderWebView(comp, style);
+      }
+      if (type.includes('button') || type === 'tbutton') {
+        return `<div class="vox-comp" style="${style}">
+          <button style="width:100%;height:100%;cursor:pointer;font-size:13px;border-radius:3px;border:1px solid #d1d5db;background:#f9fafb;"
+            onclick="handleEvent('${comp.name}','OnClick')">${p.Caption || comp.name}</button>
+        </div>`;
+      }
+      if (type.includes('label') || type === 'tlabel') {
+        return `<div class="vox-comp" style="${style};display:flex;align-items:center;font-size:${p.FontSize||13}px;color:${p.FontColor||'#1a1a1a'};">${p.Caption || comp.name}</div>`;
+      }
+      if (type.includes('edit') || type === 'tedit') {
+        return `<div class="vox-comp" style="${style}">
+          <input id="live_${comp.id}" type="text" value="${p.Text||''}"
+            style="width:100%;height:100%;border:1px solid #d1d5db;border-radius:3px;padding:0 8px;font-size:13px;"
+            oninput="updateProp('${comp.name}','Text',this.value)">
+        </div>`;
+      }
+      if (type.includes('memo') || type === 'tmemo') {
+        return `<div class="vox-comp" style="${style}">
+          <textarea id="live_${comp.id}"
+            style="width:100%;height:100%;border:1px solid #d1d5db;border-radius:3px;padding:8px;font-size:12px;resize:none;">${p.Lines||p.Text||''}</textarea>
+        </div>`;
+      }
+      // Fallback genérico
+      return `<div class="vox-comp" style="${style};border:1px dashed #9ca3af;display:flex;align-items:center;justify-content:center;font-size:10px;color:#9ca3af;background:#f9fafb;">
+        ${comp.type}<br>${comp.name}
+      </div>`;
+    }
+
+    // ── Renderiza TVoxWebView usando a tag <webview> nativa do Electron
+    function renderWebView(comp, style) {
+      const p = comp.props || {};
+      const url = (p.URL || p.url || '').trim();
+      const html = p.HTML || p.html || '';
+      const css  = p.CSS  || p.css  || '';
+      const js   = p.JavaScript || p.javascript || '';
+
+      let webviewEl = '';
+      let displayUrl = url || '(HTML Inline)';
+
+      if (url) {
+        // URL externa — a tag <webview> do Electron NÃO tem restricoes de iframe!
+        webviewEl = `<webview
+          id="wv_${comp.id}"
+          src="${url}"
+          style="width:100%;height:100%;display:block;"
+          allowpopups
+          webpreferences="contextIsolation=yes"
+        ></webview>`;
+      } else {
+        // HTML inline
+        const srcdoc = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${css}</style></head><body>${html}<script>${js}<\/script></body></html>`;
+        const encoded = encodeURIComponent(srcdoc);
+        webviewEl = `<webview
+          id="wv_${comp.id}"
+          src="data:text/html;charset=utf-8,${encoded}"
+          style="width:100%;height:100%;display:block;"
+        ></webview>`;
+      }
+
+      return `
+        <div class="vox-comp" style="${style}">
+          <div class="vox-webview-container">
+            <div class="vox-webview-navbar">
+              <button onclick="wvBack('${comp.id}')" title="Voltar">←</button>
+              <button onclick="wvFwd('${comp.id}')"  title="Avançar">→</button>
+              <button onclick="wvReload('${comp.id}')" title="Recarregar">↺</button>
+              <input class="vox-webview-urlbar" id="url_${comp.id}"
+                value="${displayUrl}"
+                onkeydown="if(event.key==='Enter')wvGo('${comp.id}',this.value)"
+                title="Pressione Enter para navegar">
+              <span class="vox-webview-badge">⚡ WebView2</span>
+            </div>
+            <div class="vox-webview-body">
+              ${webviewEl}
+            </div>
+          </div>
+        </div>`;
+    }
+
+    // ── Inicializa eventos da webview após ser inserida no DOM
+    function initWebview(wv) {
+      const id = wv.id.replace('wv_', '');
+      const urlInput = document.getElementById('url_' + id);
+
+      wv.addEventListener('did-start-loading', () => {
+        if (urlInput) urlInput.style.borderColor = '#fbbf24';
+      });
+      wv.addEventListener('did-finish-load', () => {
+        if (urlInput) {
+          urlInput.style.borderColor = '#22c55e';
+          try {
+            if (typeof wv.getURL === 'function') {
+              const u = wv.getURL();
+              if (u && !u.startsWith('data:')) urlInput.value = u;
+            }
+          } catch (err) {}
+          setTimeout(() => { urlInput.style.borderColor = ''; }, 1500);
+        }
+      });
+      wv.addEventListener('did-fail-load', (e) => {
+        if (urlInput) urlInput.style.borderColor = '#ef4444';
+        console.warn('[WebView] Falha ao carregar:', e.errorDescription, '| URL:', e.validatedURL);
+      });
+      wv.addEventListener('did-navigate', (e) => {
+        if (urlInput && e.url) urlInput.value = e.url;
+      });
+    }
+
+    // ── Navegação programática
+    function wvBack(id) {
+      const wv = document.getElementById('wv_' + id);
+      if (wv && wv.canGoBack && wv.canGoBack()) wv.goBack();
+    }
+    function wvFwd(id) {
+      const wv = document.getElementById('wv_' + id);
+      if (wv && wv.canGoForward && wv.canGoForward()) wv.goForward();
+    }
+    function wvReload(id) {
+      const wv = document.getElementById('wv_' + id);
+      if (wv && wv.reload) wv.reload();
+    }
+    function wvGo(id, url) {
+      const wv = document.getElementById('wv_' + id);
+      if (!wv) return;
+      const fullUrl = url.startsWith('http') ? url : 'https://' + url;
+      wv.src = fullUrl;
+      const urlInput = document.getElementById('url_' + id);
+      if (urlInput) urlInput.value = fullUrl;
+    }
+
+    // ── Eventos de componentes
+    function handleEvent(compName, eventName) {
+      console.log(`[VoxRunner] Evento: ${compName}.${eventName}`);
+    }
+    function updateProp(compName, prop, value) {
+      console.log(`[VoxRunner] Prop: ${compName}.${prop} = ${value}`);
+    }
+
+    // ── Calcula alinhamentos (alClient, alTop, alBottom, etc.)
+    function computeAlignments(comps, fw, fh) {
+      const clientH = fh - 28; // subtrai titlebar
+      let top = 0, bottom = clientH, left = 0, right = fw;
+
+      // Copia para não mutar o original
+      const result = comps.map(c => ({ ...c, props: { ...c.props } }));
+
+      ['alTop','alBottom','alLeft','alRight','alClient'].forEach(align => {
+        result.forEach(c => {
+          const a = (c.props && (c.props.Align || c.props.align)) || 'alNone';
+          if (a !== align) return;
+          if (align === 'alTop')    { c.left=left; c.top=top;    c.width=right-left; top+=c.height; }
+          if (align === 'alBottom') { c.left=left; c.top=bottom-c.height; c.width=right-left; bottom-=c.height; }
+          if (align === 'alLeft')   { c.left=left; c.top=top;    c.height=bottom-top; left+=c.width; }
+          if (align === 'alRight')  { c.left=right-c.width; c.top=top; c.height=bottom-top; right-=c.width; }
+          if (align === 'alClient') { c.left=left; c.top=top; c.width=right-left; c.height=bottom-top; }
+        });
+      });
+
+      return result;
+    }
+  </script>
+</body>
+</html>

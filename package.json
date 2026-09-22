@@ -24,5 +24,8 @@
     "mysql2": "^3.24.4",
     "node-firebird": "^2.16.0",
     "ssh2": "^1.17.0"
+  },
+  "devDependencies": {
+    "electron": "^44.4.3"
   }
 }

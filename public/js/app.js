@@ -5724,9 +5724,19 @@ class ${baseName} {
       alert('Falha ao conectar com o repositório remoto:\n' + err.message);
     }
   }
+
+  // --- RUNNER NATIVO (ELECTRON / WEBVIEW2) ---
+  openNativeWebView(url) {
+    if (typeof window.voxOpenNativeWebView === 'function') {
+      window.voxOpenNativeWebView(url);
+    } else {
+      console.warn('voxOpenNativeWebView ainda não disponível');
+    }
+  }
 }
 
 window.addEventListener('DOMContentLoaded', () => {
   window.app = new VoxStudioApp();
   window.app.init();
 });
+

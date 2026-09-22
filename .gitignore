@@ -5,3 +5,4 @@ node_modules/
 scratch/
 .temp/
 dist/web-app/
+electron-runner/current_state.json

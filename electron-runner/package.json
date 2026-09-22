@@ -1,0 +1,11 @@
+{
+  "name": "vox-electron-runner",
+  "version": "1.0.0",
+  "description": "Vox Studio RAD — Native Electron Runner com WebView2",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "author": "Mauricio Abreu",
+  "license": "MIT"
+}

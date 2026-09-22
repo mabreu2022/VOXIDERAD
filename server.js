@@ -13,6 +13,7 @@ const WORKSPACE_DIR = process.env.WORKSPACE_DIR || path.resolve(__dirname);
 const DB_PATH = path.resolve(WORKSPACE_DIR, 'clientes_vox.db');
 const DIST_WEB_DIR = path.resolve(WORKSPACE_DIR, 'dist/web-app');
 let webAppProc = null;
+let latestRunnerState = null;
 
 // Tentar inicializar SQLite nativo se disponível
 let sqliteDb = null;
@@ -1730,6 +1731,72 @@ const server = http.createServer(async (req, res) => {
     } catch (err) {
       return sendJson(res, 500, { ok: false, error: err.message });
     }
+  }
+
+  // --------------------------------------------------------------------------
+  // API: Runner Nativo via Electron (WebView2) — Abre janela nativa com qualquer URL
+  // Usa Electron que tem WebView2/Chromium sem restricoes de X-Frame-Options/CSP
+  // --------------------------------------------------------------------------
+  if (pathname === '/api/runner/native' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const { formState } = JSON.parse(body);
+        if (!formState) return sendJson(res, 400, { error: 'formState obrigatório' });
+
+        latestRunnerState = formState;
+
+        // Salva estado em arquivo JSON para ser lido pelo Electron de forma segura sem limites de CLI
+        const electronDir = path.join(__dirname, 'electron-runner');
+        if (!fs.existsSync(electronDir)) fs.mkdirSync(electronDir, { recursive: true });
+        const stateFilePath = path.join(electronDir, 'current_state.json');
+        fs.writeFileSync(stateFilePath, JSON.stringify(formState, null, 2), 'utf-8');
+
+        // Caminho para o electron instalado localmente no projeto
+        const electronBin = path.join(__dirname, 'node_modules', '.bin', 'electron');
+        const electronMain = path.join(__dirname, 'electron-runner', 'main.js');
+
+        console.log(`[ElectronRunner] Abrindo janela nativa para: ${formState.name || 'Form1'}`);
+
+        const child = spawn(
+          process.platform === 'win32' ? electronBin + '.cmd' : electronBin,
+          [electronMain, stateFilePath, String(PORT)],
+          {
+            detached: true,
+            stdio: 'ignore',
+            env: { ...process.env, ELECTRON_ENABLE_LOGGING: '1' },
+            shell: process.platform === 'win32',
+          }
+        );
+        child.unref();
+
+        return sendJson(res, 200, {
+          ok: true,
+          message: 'Janela Electron/WebView2 aberta',
+          pid: child.pid
+        });
+      } catch (err) {
+        console.error('[ElectronRunner] Erro:', err.message);
+        return sendJson(res, 500, { error: err.message });
+      }
+    });
+    return;
+  }
+
+  // --------------------------------------------------------------------------
+  // API: Estado atual do runner para janelas nativas ou Electron
+  // --------------------------------------------------------------------------
+  if (pathname === '/api/runner/state' && req.method === 'GET') {
+    if (!latestRunnerState) {
+      const stateFilePath = path.join(__dirname, 'electron-runner', 'current_state.json');
+      if (fs.existsSync(stateFilePath)) {
+        try {
+          latestRunnerState = JSON.parse(fs.readFileSync(stateFilePath, 'utf-8'));
+        } catch (e) {}
+      }
+    }
+    return sendJson(res, 200, { ok: true, formState: latestRunnerState });
   }
 
   // --------------------------------------------------------------------------
