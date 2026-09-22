@@ -362,29 +362,29 @@ class VoxFormRunner {
         <div id="live_${comp.id}" style="
           width:100%; height:100%;
           display:flex; flex-direction:column;
-          background:#0f172a;
-          border:1px solid #334155;
+          background:#ffffff;
+          border:1px solid #d1d5db;
           border-radius:3px;
           overflow:hidden;
         ">
           <!-- Barra de navegação WebView -->
           <div style="
-            height:30px; background:#1e2430;
-            border-bottom:1px solid #334155;
+            height:30px; background:#f3f4f6;
+            border-bottom:1px solid #e5e7eb;
             display:flex; align-items:center; padding:0 6px; gap:6px; flex-shrink:0;
           ">
-            <button style="background:transparent;border:none;color:#94a3b8;cursor:pointer;font-size:13px;padding:0 4px;"
+            <button style="background:transparent;border:none;color:#6b7280;cursor:pointer;font-size:13px;padding:0 4px;"
               onclick="(function(){var f=document.getElementById('wvf_${comp.id}');if(f)f.contentWindow.history.back();})()"
               title="Voltar">◀</button>
-            <button style="background:transparent;border:none;color:#94a3b8;cursor:pointer;font-size:13px;padding:0 4px;"
+            <button style="background:transparent;border:none;color:#6b7280;cursor:pointer;font-size:13px;padding:0 4px;"
               onclick="(function(){var f=document.getElementById('wvf_${comp.id}');if(f)f.contentWindow.history.forward();})()"
               title="Avançar">▶</button>
-            <button style="background:transparent;border:none;color:#94a3b8;cursor:pointer;font-size:13px;padding:0 4px;"
+            <button style="background:transparent;border:none;color:#6b7280;cursor:pointer;font-size:13px;padding:0 4px;"
               onclick="(function(){var f=document.getElementById('wvf_${comp.id}');if(f)f.src=f.src;})()"
               title="Recarregar">🔄</button>
             <div style="
-              flex:1; background:#0f172a; border:1px solid #334155; border-radius:3px;
-              padding:2px 8px; font-size:10px; color:#94a3b8; font-family:monospace;
+              flex:1; background:#ffffff; border:1px solid #d1d5db; border-radius:12px;
+              padding:2px 10px; font-size:11px; color:#374151; font-family:monospace;
               overflow:hidden; white-space:nowrap; text-overflow:ellipsis;
             " title="${displayUrl}">${displayUrl}</div>
             <span style="font-size:9px;color:#fff;font-weight:700;background:#0284c7;padding:1px 6px;border-radius:2px;white-space:nowrap;">

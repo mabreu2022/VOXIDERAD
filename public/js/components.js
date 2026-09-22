@@ -2308,8 +2308,8 @@ window.VOX_COMPONENTS['vox_WebView'] = {
     return `
       <div style="
         width: 100%; height: 100%;
-        background: #0f172a;
-        border: 1px solid #334155;
+        background: #ffffff;
+        border: 1px solid #d1d5db;
         border-radius: 4px;
         display: flex;
         flex-direction: column;
@@ -2319,8 +2319,8 @@ window.VOX_COMPONENTS['vox_WebView'] = {
         <!-- Barra de endereço estilo browser -->
         <div style="
           height: 28px;
-          background: #1e2430;
-          border-bottom: 1px solid #334155;
+          background: #f3f4f6;
+          border-bottom: 1px solid #e5e7eb;
           display: flex;
           align-items: center;
           padding: 0 8px;
@@ -2330,12 +2330,12 @@ window.VOX_COMPONENTS['vox_WebView'] = {
           <span style="font-size:10px;">🌐</span>
           <div style="
             flex: 1;
-            background: #0f172a;
-            border: 1px solid #334155;
+            background: #ffffff;
+            border: 1px solid #d1d5db;
             border-radius: 3px;
             padding: 2px 8px;
             font-size: 10px;
-            color: #94a3b8;
+            color: #374151;
             font-family: monospace;
             overflow: hidden;
             white-space: nowrap;
