@@ -321,15 +321,17 @@ class VoxFormRunner {
     const WV_TYPES = ['vox_WebView','TVoxWebView','TWebBrowser','TEdgeBrowser',
                       'vox_webview','tvoxwebview','twebbrowser','tedgebrowser'];
     if (WV_TYPES.includes(comp.type) || WV_TYPES.includes((comp.type||'').toLowerCase())) {
-      console.log('[VoxRunner] Renderizando WebView:', comp.name, 'tipo:', comp.type, 'URL:', comp.props.URL, 'HTML-len:', (comp.props.HTML||'').length);
-      const url     = (comp.props.URL || '').trim();
-      const html    = comp.props.HTML || '';
-      const css     = comp.props.CSS  || '';
-      const js      = comp.props.JavaScript || '';
-      const ts      = comp.props.TypeScript  || '';
-      const useTS   = comp.props.UseTypeScript || ts.trim().length > 0;
-      const scrolls = comp.props.ScrollBars !== false;
-      const allowFS = comp.props.AllowFullscreen === true;
+      const p = comp.props || {};
+      // Lê props com qualquer casing (URL/url, HTML/html, etc.)
+      const url     = (p.URL || p.url || p.Url || '').trim();
+      const html    = p.HTML || p.html || p.Html || '';
+      const css     = p.CSS  || p.css  || p.Css  || '';
+      const js      = p.JavaScript || p.javascript || p.JS || p.js || '';
+      const ts      = p.TypeScript  || p.typescript  || p.TS || p.ts || '';
+      const useTS   = p.UseTypeScript || p.useTypeScript || ts.trim().length > 0;
+      const scrolls = p.ScrollBars !== false && p.scrollBars !== false;
+      const allowFS = p.AllowFullscreen === true || p.allowFullscreen === true;
+      console.log('[VoxRunner] WebView:', comp.name, '| URL:', JSON.stringify(url), '| HTML-len:', html.length, '| props:', Object.keys(p).join(','));
       const scrollStyle = scrolls ? 'overflow:auto;' : 'overflow:hidden;';
       const allowFSAttr = allowFS ? 'allowfullscreen' : '';
 
@@ -337,17 +339,14 @@ class VoxFormRunner {
       let displayUrl  = '';
 
       if (url) {
-        // Modo URL: carrega direto. Se o site bloquear (X-Frame-Options),
-        // o browser mostra seu erro nativo dentro do iframe.
         iframeAttrs = `src="${url}" referrerpolicy="no-referrer-when-downgrade" ${allowFSAttr}`;
         displayUrl = url;
       } else {
-        // Modo inline HTML/CSS/JS/TS
         const htmlContent = html || '<p style="font-family:sans-serif;padding:16px;color:#475569;">Conteúdo vazio — use ✏️ Editar Conteúdo</p>';
         const srcdoc = window.VoxWebViewManager
           ? window.VoxWebViewManager.buildSrcdoc(htmlContent, css, js, ts, useTS)
           : `<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{box-sizing:border-box}body{margin:0;font-family:sans-serif}${css}</style></head><body>${htmlContent}<script>${js}</script></body></html>`;
-        iframeAttrs = `srcdoc="${srcdoc.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups" ${allowFSAttr}`;
+        iframeAttrs = `srcdoc="${srcdoc.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" sandbox="allow-scripts allow-forms allow-modals allow-popups" ${allowFSAttr}`;
         displayUrl = '(HTML/CSS/JS/TS Inline)';
       }
 

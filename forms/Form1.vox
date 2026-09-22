@@ -18,7 +18,7 @@ published:
     var width: int;
     var height: int;
     var title: str;
-
+    let mut vox_webview1: TVoxWebView;
 
 public:
     // ── Construtor e Inicialização de Tela ────────────────────────────────────
@@ -28,6 +28,21 @@ public:
         this.height = 480;
         this._initialized = true;
 
+        this.vox_webview1 = new TVoxWebView();
+        this.vox_webview1.left = 80;
+        this.vox_webview1.top = 40;
+        this.vox_webview1.width = 400;
+        this.vox_webview1.height = 300;
+        this.vox_webview1.url = "https://www.uol.com.br";
+        this.vox_webview1.html = """<h2 style="color:#38bdf8;font-family:sans-serif;padding:16px;">Olá do TVoxWebView! 🌐</h2>
+<p style="font-family:sans-serif;padding:0 16px;color:#64748b;">Edite o conteúdo HTML, CSS, JavaScript ou TypeScript
+em ✏️ Editar Conteúdo no Object Inspector.</p>""";
+        this.vox_webview1.css = """body { background: #0f172a; } h2 { margin-top: 24px; }""";
+        this.vox_webview1.useTypeScript = false;
+        this.vox_webview1.sandbox = true;
+        this.vox_webview1.allowFullscreen = false;
+        this.vox_webview1.scrollBars = true;
+        this.vox_webview1.zoomFactor = 100;
 
         println("Formulário " + this.title + " inicializado no Vox Studio.");
     }

@@ -4080,6 +4080,19 @@ class ${baseName} {
     this.renderProjectTree();
   }
 
+  renderProjectTree() {
+    // Atualiza a arvore de projetos se o componente existir
+    if (typeof window.ProjectTree !== 'undefined' && window.ProjectTree && typeof window.ProjectTree.render === 'function') {
+      window.ProjectTree.render();
+    }
+    // Atualiza breadcrumb/title da plataforma ativa no toolbar
+    const platLabel = document.getElementById('platformLabel') || document.getElementById('toolbarPlatformLabel');
+    if (platLabel) {
+      const names = { web: 'Web', linux: 'Linux 64', windows: 'Windows 64' };
+      platLabel.textContent = names[this.currentPlatform] || this.currentPlatform;
+    }
+  }
+
   onPlatformChange(newPlat) {
     this.currentPlatform = newPlat;
     const sel = document.getElementById('toolbarPlatformSelect');
