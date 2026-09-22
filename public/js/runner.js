@@ -336,26 +336,27 @@ class VoxFormRunner {
       const scrolls  = comp.props.ScrollBars !== false;
       const allowFS  = comp.props.AllowFullscreen === true;
 
-      // Construir srcdoc via VoxWebViewManager se disponível
-      let srcdoc = '';
-      if (window.VoxWebViewManager) {
-        srcdoc = window.VoxWebViewManager.buildSrcdoc(html, css, js, ts, useTS);
-      } else {
-        srcdoc = `<!DOCTYPE html><html><head><style>${css}</style></head><body>${html}<script>${js}</script></body></html>`;
-      }
-
       const sandboxAttr = sandbox
-        ? `sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups"`
+        ? `sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox"`
         : '';
       const allowFSAttr = allowFS ? `allowfullscreen` : '';
       const scrollStyle = scrolls ? 'overflow:auto;' : 'overflow:hidden;';
 
-      const iframeSrc = url
-        ? `src="${url}"`
-        : `srcdoc="${srcdoc.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}"`;
-
-      // Barra de endereço navegável
-      const displayUrl = url || '(HTML/CSS/JS/TS Inline)';
+      // URLs externas → proxy reverso (remove X-Frame-Options/CSP)
+      // Conteúdo inline → srcdoc direto
+      let iframeSrc = '';
+      let displayUrl = '';
+      if (url) {
+        const proxyUrl = `/api/webview/proxy?url=${encodeURIComponent(url)}`;
+        iframeSrc = `src="${proxyUrl}"`;
+        displayUrl = url;
+      } else {
+        const srcdoc = window.VoxWebViewManager
+          ? window.VoxWebViewManager.buildSrcdoc(html, css, js, ts, useTS)
+          : `<!DOCTYPE html><html><head><style>${css}</style></head><body>${html}<script>${js}</script></body></html>`;
+        iframeSrc = `srcdoc="${srcdoc.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}"`;
+        displayUrl = '(HTML/CSS/JS/TS Inline)';
+      }
 
       return `
         <div id="live_${comp.id}" style="
