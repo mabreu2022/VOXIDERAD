@@ -158,8 +158,16 @@ class VoxObjectInspector {
         ];
       }
 
+      const isWebView = (
+        comp.type === 'vox_WebView' || comp.type === 'TVoxWebView' ||
+        comp.type === 'TWebBrowser' || comp.type === 'TEdgeBrowser'
+      );
+
       Object.entries(comp.props).forEach(([key, val]) => {
         if (key === 'Align') return;
+
+        // Propriedades internas do WebView gerenciadas automaticamente — não exibir
+        if (isWebView && key === 'UseTypeScript') return;
 
         // Skip duplicate/mirror properties — keep only the English-named ones
         // Portuguese mirrors: IP -> Server, Porta -> Port, Login -> UserName, Senha -> Password
@@ -176,7 +184,10 @@ class VoxObjectInspector {
         let type = 'text';
         let options = [];
 
-        if (key === 'SQL') {
+        // Propriedades de conteúdo do WebView → editor dedicado
+        if (isWebView && (key === 'HTML' || key === 'CSS' || key === 'JavaScript' || key === 'TypeScript')) {
+          type = 'webview-content';
+        } else if (key === 'SQL') {
           type = 'sql';
         } else if (key === 'DriverName' || key === 'Driver') {
           type = 'select';
@@ -311,6 +322,30 @@ class VoxObjectInspector {
             <input class="delphi-prop-input" value="${p.value || ''}"
               oninput="window.app.inspector.onPropChange('${p.targetType}', '${p.propKey || p.name}', this.value)"
               onchange="window.app.inspector.onPropChange('${p.targetType}', '${p.propKey || p.name}', this.value)">
+          </div>
+        `;
+      } else if (p.type === 'webview-content') {
+        const compId = this.target ? this.target.id : '';
+        const tabMap = { 'HTML': 'html', 'CSS': 'css', 'JavaScript': 'javascript', 'TypeScript': 'typescript' };
+        const tab = tabMap[p.name] || 'html';
+        const lineCount = (p.value || '').toString().split('\n').length;
+        const preview = (p.value || '').toString().replace(/\n/g,' ').substring(0, 28);
+        const hasContent = (p.value || '').toString().trim().length > 0;
+        const tabColors = { 'HTML': '#38bdf8', 'CSS': '#7dd3fc', 'JavaScript': '#fde68a', 'TypeScript': '#a5b4fc' };
+        const tabColor = tabColors[p.name] || '#94a3b8';
+        inputHtml = `
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px;">
+            <span style="font-size: 10px; color: ${tabColor}; font-family: monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100px;"
+              title="${hasContent ? preview + (lineCount > 1 ? '... ('+lineCount+' linhas)' : '') : '(vazio)'}">
+              ${hasContent ? '(' + lineCount + ' linha' + (lineCount !== 1 ? 's' : '') + ')' : '(vazio)'}
+            </span>
+            <button class="tool-btn" style="height: 18px; padding: 0 6px; font-size: 10px; color: ${tabColor}; white-space:nowrap;"
+              onclick="(function(){
+                if(window.VoxWebViewManager){
+                  window.VoxWebViewManager.openEditor('${compId}');
+                  setTimeout(()=>window.VoxWebViewManager.switchTab('${tab}'), 120);
+                }
+              })()">✏️ ...</button>
           </div>
         `;
       } else if (p.type === 'sql') {
