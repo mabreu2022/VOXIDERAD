@@ -2298,13 +2298,53 @@ window.VOX_COMPONENTS['vox_WebView'] = {
   },
   events: ['OnNavigate', 'OnLoad', 'OnError', 'OnMessage'],
   render(comp) {
-    const url = comp.props.URL || '';
+    const url  = (comp.props.URL || '').trim();
     const html = comp.props.HTML || '';
     const css  = comp.props.CSS  || '';
-    const label = url ? url : '(HTML/CSS/JS/TS Inline)';
-    const hasContent = url || html.trim();
+    const label = url || (html.trim() ? '(HTML/CSS/JS/TS Inline)' : 'about:blank');
 
-    // No designer: mostrar preview estilizado com badge
+    // Conteúdo da área central do designer
+    let contentArea = '';
+    if (url) {
+      // Modo URL: mostrar representação visual (não carrega iframe externo no designer)
+      contentArea = `
+        <div style="
+          width:100%;height:100%;
+          display:flex;flex-direction:column;
+          align-items:center;justify-content:center;
+          gap:8px;color:#374151;background:#f9fafb;
+        ">
+          <span style="font-size:32px;">🌐</span>
+          <span style="font-size:11px;font-family:monospace;color:#0284c7;
+            max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+            background:#eff6ff;padding:3px 8px;border-radius:4px;border:1px solid #bfdbfe;">
+            ${url}
+          </span>
+          <span style="font-size:9px;color:#94a3b8;">Pressione F9 para carregar</span>
+        </div>`;
+    } else if (html.trim()) {
+      // Modo inline: preview real do HTML+CSS
+      const srcdocContent = (html + '<style>' + css + '</style>').replace(/"/g, '&quot;');
+      contentArea = `<iframe
+        style="width:100%;height:100%;border:none;pointer-events:none;"
+        srcdoc="${srcdocContent}"
+        sandbox="allow-scripts"
+      ></iframe>`;
+    } else {
+      // Vazio
+      contentArea = `
+        <div style="
+          width:100%;height:100%;
+          display:flex;flex-direction:column;
+          align-items:center;justify-content:center;
+          color:#94a3b8;gap:6px;
+        ">
+          <span style="font-size:28px;">🌐</span>
+          <span style="font-size:11px;font-family:sans-serif;">TVoxWebView</span>
+          <span style="font-size:10px;color:#cbd5e1;">Clique em ✏️ Editar Conteúdo</span>
+        </div>`;
+    }
+
     return `
       <div style="
         width: 100%; height: 100%;
@@ -2323,43 +2363,32 @@ window.VOX_COMPONENTS['vox_WebView'] = {
           border-bottom: 1px solid #e5e7eb;
           display: flex;
           align-items: center;
-          padding: 0 8px;
-          gap: 6px;
+          padding: 0 6px;
+          gap: 4px;
           flex-shrink: 0;
         ">
-          <span style="font-size:10px;">🌐</span>
+          <span style="font-size:12px;color:#6b7280;">←</span>
+          <span style="font-size:12px;color:#6b7280;">→</span>
+          <span style="font-size:11px;color:#6b7280;">↺</span>
           <div style="
             flex: 1;
             background: #ffffff;
             border: 1px solid #d1d5db;
-            border-radius: 3px;
-            padding: 2px 8px;
+            border-radius: 12px;
+            padding: 2px 10px;
             font-size: 10px;
             color: #374151;
             font-family: monospace;
             overflow: hidden;
             white-space: nowrap;
             text-overflow: ellipsis;
-          ">${label || 'about:blank'}</div>
-          <span style="font-size:9px;color:#38bdf8;font-weight:700;background:#0284c7;padding:1px 5px;border-radius:2px;">TVoxWebView</span>
+          ">${label}</div>
+          <span style="font-size:9px;color:#fff;font-weight:700;background:#0284c7;
+            padding:1px 5px;border-radius:8px;white-space:nowrap;">WebView</span>
         </div>
         <!-- Área de conteúdo -->
         <div style="flex:1; overflow:hidden; position:relative;">
-          ${hasContent ? `<iframe
-            style="width:100%;height:100%;border:none;pointer-events:none;"
-            srcdoc="${(html + '<style>' + css + '</style>').replace(/"/g, '&quot;')}"
-            sandbox="allow-scripts"
-          ></iframe>` : `
-          <div style="
-            width:100%;height:100%;
-            display:flex;flex-direction:column;
-            align-items:center;justify-content:center;
-            color:#334155;gap:6px;
-          ">
-            <span style="font-size:28px;">🌐</span>
-            <span style="font-size:11px;font-family:sans-serif;">TVoxWebView</span>
-            <span style="font-size:10px;color:#475569;">Clique em ✏️ Editar Conteúdo no Inspector</span>
-          </div>`}
+          ${contentArea}
         </div>
       </div>
     `;
