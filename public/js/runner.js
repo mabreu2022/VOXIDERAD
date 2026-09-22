@@ -246,7 +246,7 @@ class VoxFormRunner {
           width: ${comp.width}px;
           height: ${comp.height}px;
         `;
-        let innerHtml = this.renderLiveComponent(comp);
+        let innerHtml = this.renderLiveComponent(comp) || '';
         if (isContainer(comp.type)) {
           const childMarkup = renderLevel(comp.name);
           const topOffset = (comp.type === 'vox_PageControl' || comp.type === 'TPageControl') ? '26px' : '0px';
@@ -319,13 +319,9 @@ class VoxFormRunner {
 
     // ------------------------------------------------------------------
     // TVoxWebView — WebBrowser nativo com HTML5 + CSS + JS + TypeScript
-    // ------------------------------------------------------------------
-    if (
-      comp.type === 'vox_WebView' ||
-      comp.type === 'TVoxWebView' ||
-      comp.type === 'TWebBrowser' ||
-      comp.type === 'TEdgeBrowser'
-    ) {
+    const WV_TYPES = ['vox_WebView','TVoxWebView','TWebBrowser','TEdgeBrowser',
+                      'vox_webview','tvoxwebview','twebbrowser','tedgebrowser'];
+    if (WV_TYPES.includes(comp.type) || WV_TYPES.includes((comp.type||'').toLowerCase())) {
       const url     = (comp.props.URL || '').trim();
       const html    = comp.props.HTML || '';
       const css     = comp.props.CSS  || '';
@@ -409,10 +405,8 @@ class VoxFormRunner {
             <iframe
               id="wvf_${comp.id}"
               ${iframeAttrs}
-              style="width:100%;height:100%;border:none;display:block;"
+              style="width:100%;height:100%;border:none;display:block;opacity:1;transition:opacity 0.3s;"
               loading="lazy"
-              onload="this.style.opacity='1'"
-              style="opacity:0;transition:opacity 0.3s;width:100%;height:100%;border:none;display:block;"
             ></iframe>
           </div>
         </div>
