@@ -339,7 +339,8 @@ class VoxFormRunner {
       let displayUrl  = '';
 
       if (url) {
-        iframeAttrs = `src="${url}" referrerpolicy="no-referrer-when-downgrade" ${allowFSAttr}`;
+        const proxyUrl = `/api/webview/proxy?url=${encodeURIComponent(url)}`;
+        iframeAttrs = `src="${proxyUrl}" ${allowFSAttr}`;
         displayUrl = url;
       } else {
         const htmlContent = html || '<p style="font-family:sans-serif;padding:16px;color:#475569;">Conteúdo vazio — use ✏️ Editar Conteúdo</p>';

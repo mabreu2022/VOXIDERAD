@@ -2306,21 +2306,15 @@ window.VOX_COMPONENTS['vox_WebView'] = {
     // Conteúdo da área central do designer
     let contentArea = '';
     if (url) {
-      // Modo URL: mostrar representação visual (não carrega iframe externo no designer)
+      // Modo URL: carrega o site diretamente no canvas via proxy transparente (remove X-Frame-Options/CSP)
+      const proxyUrl = `/api/webview/proxy?url=${encodeURIComponent(url)}`;
       contentArea = `
-        <div style="
-          width:100%;height:100%;
-          display:flex;flex-direction:column;
-          align-items:center;justify-content:center;
-          gap:8px;color:#374151;background:#f9fafb;
-        ">
-          <span style="font-size:32px;">🌐</span>
-          <span style="font-size:11px;font-family:monospace;color:#0284c7;
-            max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-            background:#eff6ff;padding:3px 8px;border-radius:4px;border:1px solid #bfdbfe;">
-            ${url}
-          </span>
-          <span style="font-size:9px;color:#94a3b8;">Pressione F9 para carregar</span>
+        <div style="width:100%;height:100%;position:relative;background:#ffffff;">
+          <iframe
+            src="${proxyUrl}"
+            style="width:100%;height:100%;border:none;pointer-events:none;display:block;background:#ffffff;"
+            loading="lazy"
+          ></iframe>
         </div>`;
     } else if (html.trim()) {
       // Modo inline: preview real do HTML+CSS

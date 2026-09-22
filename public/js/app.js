@@ -1014,7 +1014,7 @@ class VoxStudioApp {
         } else if (e.ctrlKey) {
           this.runApp();
         } else {
-          this.startDebug();
+          this.runLiveForm();
         }
       } else if (e.key === 'Escape') {
         // Padrão Delphi clássico: Escape seleciona o contêiner pai (TabSheet -> PageControl -> Form)
@@ -5722,6 +5722,15 @@ class ${baseName} {
     } catch (err) {
       this.appendGitLog('ERRO: ' + err.message);
       alert('Falha ao conectar com o repositório remoto:\n' + err.message);
+    }
+  }
+
+  // --- RUNNER FORMULÁRIO AO VIVO (F9) ---
+  runLiveForm() {
+    if (this.runner && this.designer && this.designer.form) {
+      this.runner.run(this.designer.form);
+    } else {
+      this.showToast('⚠️ Nenhum formulário disponível para executar.');
     }
   }
 

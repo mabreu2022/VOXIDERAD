@@ -117,8 +117,10 @@
     <div class="delphi-menu-item">
       <span>Run</span>
       <div class="delphi-menu-dropdown">
-        <div class="delphi-menu-dropdown-item" onclick="window.app.runApp()"><span>▶ Executar Sem Depuração</span><span class="shortcut">Ctrl+F9</span></div>
-        <div class="delphi-menu-dropdown-item" style="color: #22c55e; font-weight: 600;" onclick="window.app.startDebug()"><span>🐞 Iniciar com Depuração</span><span class="shortcut">F9</span></div>
+        <div class="delphi-menu-dropdown-item" style="color: #22c55e; font-weight: 600;" onclick="window.app.runLiveForm()"><span>▶ Executar Formulário ao Vivo</span><span class="shortcut">F9</span></div>
+        <div class="delphi-menu-dropdown-item" style="color: #0d9488; font-weight: 600;" onclick="window.app.openNativeWebView()"><span>⚡ Executar em Janela Nativa (WebView2)</span></div>
+        <div class="delphi-menu-dropdown-item" onclick="window.app.runApp()"><span>🌐 Compilar e Executar Web App</span><span class="shortcut">Ctrl+F9</span></div>
+        <div class="delphi-menu-dropdown-item" onclick="window.app.startDebug()"><span>🐞 Iniciar Depuração</span></div>
         <div class="menu-sep"></div>
         <div class="delphi-menu-dropdown-item" onclick="window.app.stepOver()"><span>⤵ Passo a Passo (Step Over)</span><span class="shortcut">F8</span></div>
         <div class="delphi-menu-dropdown-item" onclick="window.app.stepInto()"><span>⤷ Entrar na Função (Step Into)</span><span class="shortcut">F7</span></div>
@@ -227,11 +229,17 @@
       <div class="tool-sep"></div>
 
       <!-- Execução e Depuração (Run / Debug Group Delphi) -->
-      <button class="tool-btn btn-run-delphi" style="border-color: #22c55e; color: #4ade80;" onclick="window.app.startDebug()" title="Iniciar Depuração com Pontos de Parada (F9)">
-        🐞 Debug (F9)
+      <button class="tool-btn btn-run-delphi" style="border-color: #22c55e; color: #4ade80; font-weight: 700;" onclick="window.app.runLiveForm()" title="Executar Formulário ao Vivo (F9)">
+        ▶ Run (F9)
+      </button>
+      <button class="tool-btn" style="background:#0f766e; color:#fff; font-weight:700; border:none; height:24px; padding:0 8px; border-radius:3px; font-size:11px;" onclick="window.app.openNativeWebView()" title="Abrir em Janela Nativa Electron (WebView2)">
+        ⚡ WebView2 Nativo
+      </button>
+      <button class="tool-btn" onclick="window.app.startDebug()" title="Iniciar Depuração com Pontos de Parada">
+        🐞 Debug
       </button>
       <button class="tool-btn" onclick="window.app.runApp()" title="Executar Sistema Web (Ctrl+F9)">
-        ▶ Run
+        🌐 Web App (Ctrl+F9)
       </button>
       <button class="tool-btn" id="tbBtnStepOver" onclick="window.app.stepOver()" title="Passo a Passo / Step Over (F8)">
         ⤵ Step Over (F8)
@@ -626,6 +634,7 @@
           <span id="runModalTitle">Executando Formulário</span>
         </div>
         <div style="display: flex; gap: 4px; align-items: center;">
+          <button class="tool-btn" style="background:#0f766e; color:#fff; font-weight:700; border:none; height:22px; padding:0 8px; border-radius:3px; font-size:11px;" onclick="window.app.openNativeWebView()" title="Abrir em Janela Nativa Electron (WebView2)">⚡ Janela Nativa</button>
           <button class="tool-btn" onclick="window.app.runner.toggleFullscreen()" id="btnRunFullscreen" title="Tela Cheia (F11)" style="height: 22px; padding: 0 8px;">⛶</button>
           <button class="tool-btn" onclick="window.app.runner.toggleMaximize()" id="btnRunMaximize" title="Maximizar / Restaurar" style="height: 22px; padding: 0 8px;">🗖</button>
           <button class="tool-btn" onclick="window.app.runner.close()" style="height: 22px; padding: 0 8px;">✕</button>
@@ -2073,18 +2082,18 @@ classe vox_CardDestaque herda vox_Panel {
     </div>
   </div>
 
-  <!-- Scripts da Aplicação (Com Cache Buster v=4.0) -->
-  <script src="js/components.js?v=4.0"></script>
-  <script src="js/codegen.js?v=4.0"></script>
-  <script src="js/templates.js?v=4.0"></script>
-  <script src="js/designer.js?v=4.0"></script>
-  <script src="js/inspector.js?v=4.0"></script>
-  <script src="js/editor.js?v=4.0"></script>
-  <script src="js/debugger.js?v=4.0"></script>
-  <script src="js/report_engine.js?v=4.0"></script>
-  <script src="js/erp_engine.js?v=4.0"></script>
-  <script src="js/runner.js?v=4.0"></script>
-  <script src="js/webview_component.js?v=4.0"></script>
-  <script src="js/app.js?v=4.0"></script>
+  <!-- Scripts da Aplicação (Com Cache Buster v=4.1) -->
+  <script src="js/components.js?v=4.1"></script>
+  <script src="js/codegen.js?v=4.1"></script>
+  <script src="js/templates.js?v=4.1"></script>
+  <script src="js/designer.js?v=4.1"></script>
+  <script src="js/inspector.js?v=4.1"></script>
+  <script src="js/editor.js?v=4.1"></script>
+  <script src="js/debugger.js?v=4.1"></script>
+  <script src="js/report_engine.js?v=4.1"></script>
+  <script src="js/erp_engine.js?v=4.1"></script>
+  <script src="js/runner.js?v=4.1"></script>
+  <script src="js/webview_component.js?v=4.1"></script>
+  <script src="js/app.js?v=4.1"></script>
 </body>
 </html>

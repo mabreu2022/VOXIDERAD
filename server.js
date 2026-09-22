@@ -1812,52 +1812,82 @@ const server = http.createServer(async (req, res) => {
     try {
       const { default: https } = await import('https');
       const { default: http } = await import('http');
-      const parsedTarget = new URL(targetUrl);
-      const client = parsedTarget.protocol === 'https:' ? https : http;
 
-      const proxyReq = client.request({
-        hostname: parsedTarget.hostname,
-        port: parsedTarget.port || (parsedTarget.protocol === 'https:' ? 443 : 80),
-        path: parsedTarget.pathname + parsedTarget.search,
-        method: 'GET',
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
-          'Accept-Encoding': 'identity',
-          'Connection': 'close'
-        },
-        rejectUnauthorized: false
-      }, (proxyRes) => {
-        // Remover headers que bloqueiam embed em iframe
-        const blockedHeaders = [
-          'x-frame-options', 'content-security-policy',
-          'x-content-type-options', 'strict-transport-security',
-          'content-encoding', 'transfer-encoding'
-        ];
-        const safeHeaders = {};
-        Object.entries(proxyRes.headers).forEach(([k, v]) => {
-          if (!blockedHeaders.includes(k.toLowerCase())) {
-            safeHeaders[k] = v;
+      // Função auxiliar para seguir redirecionamentos HTTP (ex: 301, 302)
+      const fetchWithRedirects = async (initialUrl, maxRedirects = 5) => {
+        let currentUrl = initialUrl;
+        let redirectCount = 0;
+
+        while (redirectCount < maxRedirects) {
+          const parsed = new URL(currentUrl);
+          const client = parsed.protocol === 'https:' ? https : http;
+
+          const response = await new Promise((resolve, reject) => {
+            const req = client.request({
+              hostname: parsed.hostname,
+              port: parsed.port || (parsed.protocol === 'https:' ? 443 : 80),
+              path: parsed.pathname + parsed.search,
+              method: 'GET',
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+                'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+                'Accept-Encoding': 'identity',
+                'Connection': 'close'
+              },
+              rejectUnauthorized: false
+            }, resolve);
+            req.on('error', reject);
+            req.end();
+          });
+
+          // Se for redirecionamento, segue o Location
+          if ([301, 302, 303, 307, 308].includes(response.statusCode) && response.headers.location) {
+            let loc = response.headers.location;
+            if (loc.startsWith('/')) {
+              loc = parsed.origin + loc;
+            }
+            currentUrl = loc;
+            redirectCount++;
+            response.resume(); // drena stream para liberar socket
+            continue;
           }
-        });
-        // Garantir content-type html e sem bloqueios
-        safeHeaders['content-type'] = safeHeaders['content-type'] || 'text/html; charset=utf-8';
-        safeHeaders['access-control-allow-origin'] = '*';
-        safeHeaders['x-proxied-by'] = 'VoxWebViewProxy/1.0';
 
-        const statusCode = [301,302,303,307,308].includes(proxyRes.statusCode)
-          ? 200 : (proxyRes.statusCode || 200);
+          // Lê o corpo completo
+          const chunks = [];
+          for await (const chunk of response) {
+            chunks.push(chunk);
+          }
+          const body = Buffer.concat(chunks);
+          return { res: response, body, finalUrl: currentUrl };
+        }
+        throw new Error('Muitos redirecionamentos');
+      };
 
-        res.writeHead(statusCode, safeHeaders);
+      const { res: proxyRes, body: rawBody, finalUrl } = await fetchWithRedirects(targetUrl);
+      const parsedFinal = new URL(finalUrl);
 
-        // Injetar script de comunicação PostMessage e reescrita de links
-        let bodyChunks = [];
-        proxyRes.on('data', chunk => bodyChunks.push(chunk));
-        proxyRes.on('end', () => {
-          let body = Buffer.concat(bodyChunks).toString('utf-8');
-          const baseTag = `<base href="${parsedTarget.origin}${parsedTarget.pathname}">`;
-          const injectScript = `
+      // Remover headers que bloqueiam embed em iframe
+      const blockedHeaders = [
+        'x-frame-options', 'content-security-policy',
+        'x-content-type-options', 'strict-transport-security',
+        'content-encoding', 'transfer-encoding'
+      ];
+      const safeHeaders = {};
+      Object.entries(proxyRes.headers).forEach(([k, v]) => {
+        if (!blockedHeaders.includes(k.toLowerCase())) {
+          safeHeaders[k] = v;
+        }
+      });
+      safeHeaders['content-type'] = safeHeaders['content-type'] || 'text/html; charset=utf-8';
+      safeHeaders['access-control-allow-origin'] = '*';
+      safeHeaders['x-proxied-by'] = 'VoxWebViewProxy/1.0';
+
+      res.writeHead(200, safeHeaders);
+
+      let body = rawBody.toString('utf-8');
+      const baseTag = `<base href="${parsedFinal.origin}${parsedFinal.pathname}">`;
+      const injectScript = `
 <script>
 // VoxWebView PostMessage bridge injected by proxy
 window.sendToHost = function(msg) {
@@ -1869,38 +1899,23 @@ window.addEventListener('message', function(e) {
   }
 });
 </script>`;
-          // Injetar <base> e script logo após <head>
-          body = body.replace(/<head[^>]*>/i, (m) => m + baseTag + injectScript);
-          // Se não tem <head>, injetar no início
-          if (!/<head/i.test(body)) body = baseTag + injectScript + body;
-          res.end(body);
-        });
-        proxyRes.on('error', () => res.end('<p>Erro ao ler resposta.</p>'));
-      });
 
-      proxyReq.on('error', (err) => {
-        res.writeHead(502, { 'content-type': 'text/html' });
-        res.end(`<html><body style="font-family:sans-serif;padding:24px;background:#0f172a;color:#94a3b8;">
-          <h2 style="color:#ef4444;">🚫 Erro ao carregar URL</h2>
-          <p><b>${err.message}</b></p>
-          <p>URL: <code style="color:#38bdf8">${targetUrl}</code></p>
-          <p style="color:#64748b;margin-top:16px;">
-            Alguns sites bloqueiam proxy reverso por políticas de segurança adicionais.
-            Tente usar a URL de embed do site (ex: YouTube usa <code>/embed/VIDEO_ID</code>).
-          </p>
-        </body></html>`);
-      });
-
-      proxyReq.setTimeout(10000, () => {
-        proxyReq.destroy();
-        res.writeHead(408, { 'content-type': 'text/html' });
-        res.end('<p>Timeout ao carregar URL.</p>');
-      });
-
-      proxyReq.end();
+      // Injetar <base> e script logo após <head>
+      if (/<head[^>]*>/i.test(body)) {
+        body = body.replace(/<head[^>]*>/i, (m) => m + baseTag + injectScript);
+      } else {
+        body = baseTag + injectScript + body;
+      }
+      res.end(body);
       return;
     } catch (err) {
-      return sendJson(res, 500, { error: err.message });
+      res.writeHead(502, { 'content-type': 'text/html; charset=utf-8' });
+      res.end(`<html><body style="font-family:sans-serif;padding:24px;background:#f8fafc;color:#334155;">
+        <h3 style="color:#ef4444;">🚫 Erro ao carregar URL</h3>
+        <p><b>${err.message}</b></p>
+        <p>URL solicitada: <code style="color:#0284c7">${targetUrl}</code></p>
+      </body></html>`);
+      return;
     }
   }
 
